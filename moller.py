@@ -6,10 +6,7 @@ from numpy import floor, ceil, sum
 from numpy import array, transpose, linspace, zeros, arange
 from periodic import table as p_dict
 from numpy.linalg import norm
-from gaussxw import gaussxwab
 import matplotlib.pyplot as plt
-from matplotlib.offsetbox import AnnotationBbox, OffsetImage
-from matplotlib.cbook import get_sample_data
 
 r"""                                   
 Moller Cross Section
@@ -108,43 +105,43 @@ def getPpAndP3pz(p3z, Eb):
 
 #-------------------------------- TEST PLOTS ----------------------------------
 
-def plotOldVNew(low = 1e4, high = 3e5):
-    p3z = 100 # eV
-    p = linspace(low, high, 200)
-    Eb = (p**2 + m**2)**.5 - m
-    pp, p3pz = getPpAndP3pz(p3z, Eb)
+# def plotOldVNew(low = 1e4, high = 3e5):
+#     p3z = 100 # eV
+#     p = linspace(low, high, 200)
+#     Eb = (p**2 + m**2)**.5 - m
+#     pp, p3pz = getPpAndP3pz(p3z, Eb)
+#
+#     new = getProbOfP3(p, [0,0,0],[0,0,p3z])
+#     old = getProbOfP3p(pp, p3pz)
+#
+#     ax.set_xlabel('LAB momentum (eV)')
+#     ax.set_ylabel('cross section (s$^{-2}$)')
+#     ax.legend()
+#     plt.tight_layout()
+#     plt.show()
 
-    new = getProbOfP3(p, [0,0,0],[0,0,p3z])
-    old = getProbOfP3p(pp, p3pz)
 
-    ax.set_xlabel('LAB momentum (eV)')
-    ax.set_ylabel('cross section (s$^{-2}$)')
-    ax.legend()
-    plt.tight_layout()
-    plt.show()
-    
-
-def plotTheta(theta1 = 1e-6, theta2 = 1e-4):
-    theta = linspace(theta1, theta2 , 200)
-    pp = getPp(1e5)
-    p3pz = pp*cos(theta)
-    E = (pp**2 + m**2)**.5
-    v = pp/E
-    fig, ax = plt.subplots()
-
-    myTheta = pp**2*getThetaOfP3p(pp, theta)
-    myPp = pp**2*getProbOfP3p(pp, p3pz)
-    wikiTheta = getWikiProbOfP3p(pp, theta)
-    wikiPp= getWikiPpOfP3p(pp, p3pz)
-
-    ax.plot(theta, myTheta/wikiTheta, label = 'theta')
-    ax.plot(theta, myPp/wikiPp, label = 'pp')
-
-    ax.set_xlabel('scattering angle')
-    ax.set_ylabel('cross section (s$^{-2}$)')
-    ax.legend()
-    plt.tight_layout()
-    plt.show()
+# def plotTheta(theta1 = 1e-6, theta2 = 1e-4):
+#     theta = linspace(theta1, theta2 , 200)
+#     pp = getPp(1e5)
+#     p3pz = pp*cos(theta)
+#     E = (pp**2 + m**2)**.5
+#     v = pp/E
+#     fig, ax = plt.subplots()
+#
+#     myTheta = pp**2*getThetaOfP3p(pp, theta)
+#     myPp = pp**2*getProbOfP3p(pp, p3pz)
+#     wikiTheta = getWikiProbOfP3p(pp, theta)
+#     wikiPp= getWikiPpOfP3p(pp, p3pz)
+#
+#     ax.plot(theta, myTheta/wikiTheta, label = 'theta')
+#     ax.plot(theta, myPp/wikiPp, label = 'pp')
+#
+#     ax.set_xlabel('scattering angle')
+#     ax.set_ylabel('cross section (s$^{-2}$)')
+#     ax.legend()
+#     plt.tight_layout()
+#     plt.show()
 
 def plotPp(pp1 = 1e4, pp2 = 3e5):
     theta = 1e-5
@@ -168,28 +165,28 @@ def plotPp(pp1 = 1e4, pp2 = 3e5):
     plt.tight_layout()
     plt.show()
 
-def plotWiki():
-    theta = linspace(1e-7, 1e-6 ,200)
-    pp = getPp(1e5)
-    fig, ax = plt.subplots()
-    ax.plot(theta, getWikiProbOfP3p(pp, theta))
-    plt.show()
+# def plotWiki():
+#     theta = linspace(1e-7, 1e-6 ,200)
+#     pp = getPp(1e5)
+#     fig, ax = plt.subplots()
+#     ax.plot(theta, getWikiProbOfP3p(pp, theta))
+#     plt.show()
 
-def plotMine():
-    p = 8e4
-    p2 = [0,0,0]
-    p3 = [0,0,0]
-    fig, ax = plt.subplots()
-    ax.plot(theta, getProbOfP3(pp, p3pz))
-    plt.show()
+# def plotMine():
+#     p = 8e4
+#     p2 = [0,0,0]
+#     p3 = [0,0,0]
+#     fig, ax = plt.subplots()
+#     ax.plot(theta, getProbOfP3(pp, p3pz))
+#     plt.show()
 
-def oldPlotMine():
-    theta = linspace(pi - 1e-6, pi - 1e-7 ,200)
-    pp = getPp(1e5)
-    p3pz = pp*cos(theta)
-    fig, ax = plt.subplots()
-    ax.plot(theta, getProbOfP3p(pp, p3pz))
-    plt.show()
+# def oldPlotMine():
+#     theta = linspace(pi - 1e-6, pi - 1e-7 ,200)
+#     pp = getPp(1e5)
+#     p3pz = pp*cos(theta)
+#     fig, ax = plt.subplots()
+#     ax.plot(theta, getProbOfP3p(pp, p3pz))
+#     plt.show()
 
 #---------------------------- PHYSICAL CONSTANTS ------------------------------
 
@@ -302,12 +299,12 @@ def plotWikiCos(pp = 4e12):
 #----------------------------- UNIT CONVERSIONS -------------------------------
 
 scale1 = 1e28 * c**2                  # s^2 to 100 fm^2 (barn)
-const = pi*hbar**2*alpha**2 * scale1  # prefactor to cross sections
-invÅtoEV = 1e10*c*hbar
-invÅtomeV = 1e10*c*hbar*1000
-invEVSqtoÅSq = hbar**2*c**2*1e20
-invEVSqtoBarn = hbar**2*c**2*1e28
-invEVSqtoPb = hbar**2*c**2*1e40
+const = pi*hbar**2 * alpha**2 * scale1  # prefactor to cross sections
+invÅtoEV = 1e10 * c * hbar
+invÅtomeV = 1e10 * c * hbar * 1000
+invEVSqtoÅSq = hbar**2 * c**2 * 1e20
+invEVSqtoBarn = hbar**2 * c**2 * 1e28
+invEVSqtoPb = hbar**2 * c**2 * 1e40
 
 #---------------------------------- SCRATCH -----------------------------------
 

@@ -7,10 +7,6 @@ from numpy import floor, ceil, cross
 from numpy import array, transpose, linspace, zeros, arange, dot, insert
 from periodic import table as p_dict
 from numpy.linalg import norm
-from gaussxw import gaussxwab
-import matplotlib.pyplot as plt 
-from matplotlib.offsetbox import AnnotationBbox, OffsetImage
-from matplotlib.cbook import get_sample_data
 
 from moller import getProbOfP3, getBetaAndGamma
 

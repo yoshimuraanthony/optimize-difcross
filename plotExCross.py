@@ -8,37 +8,37 @@ from excite import getProperties
 from getKwargsDict import getKwargsDict
 from time import time
 
-def getExCrossFromFile(
-        infile = 'crossAndEdiff.out',
-        OUTCAR = 'OUTCAR',
-        ):
-    """
-    returns sums over all valence to conduction band cross secitons
-    """
-    trans_dict = {}
-    with open(infile) as f:
-        f.readline()
-        for line in f:
-            line_list = line.split()
-            cross = float(line_list[1])
-            kpt = int(line_list[2])
-            band1 = int(line_list[4])
-            band2 = int(line_list[6])
-            trans_dict[(kpt, band1, band2)] = cross
-
-    nbands, nelect, wt_list = getNbandsNelectAndKptWts(OUTCAR)
-    occ = int(nelect/2)
-    vb_list = list(range(occ))
-    cb_list = list(range(occ, nbands))
-
-    totCross = 0
-    for i, wt in enumerate(wt_list):
-        for vb in vb_list:
-            for cb in cb_list:
-                cross = trans_dict[(i, vb, cb)]
-                totCross += cross
-
-    return totCross  # already multiplied by 4
+# def getExCrossFromFile(
+#         infile = 'crossAndEdiff.out',
+#         OUTCAR = 'OUTCAR',
+#         ):
+#     """
+#     returns sums over all valence to conduction band cross secitons
+#     """
+#     trans_dict = {}
+#     with open(infile) as f:
+#         f.readline()
+#         for line in f:
+#             line_list = line.split()
+#             cross = float(line_list[1])
+#             kpt = int(line_list[2])
+#             band1 = int(line_list[4])
+#             band2 = int(line_list[6])
+#             trans_dict[(kpt, band1, band2)] = cross
+#
+#     nbands, nelect, wt_list = getNbandsNelectAndKptWts(OUTCAR)
+#     occ = int(nelect/2)
+#     vb_list = list(range(occ))
+#     cb_list = list(range(occ, nbands))
+#
+#     totCross = 0
+#     for i, wt in enumerate(wt_list):
+#         for vb in vb_list:
+#             for cb in cb_list:
+#                 cross = trans_dict[(i, vb, cb)]
+#                 totCross += cross
+#
+#     return totCross  # already multiplied by 4
 
 
 def plotCrossVsEnergy(
@@ -142,10 +142,7 @@ def getEdiffDict(
     """
     energy_tab = getEnergyTab(OUTCAR)
     nbands, nelect, wt_list, area = getProperties(OUTCAR)
-    normalization = 1/sum(wt_list) 
     occ = int(nelect/2)
-    vb_list = list(range(occ))
-    cb_list = list(range(occ, nbands))
 
     ediff_dict = {}
     for i2, energy2_list in enumerate(energy_tab):
