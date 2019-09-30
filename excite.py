@@ -143,10 +143,10 @@ def getCrossDict(
                     cross_i2i3_dict[vb] = cross_i2i3vb_dict
                 cross_i2_dict[i3] = cross_i2i3_dict
             cross_dict[i2] = cross_i2_dict
-            f.write('\tloop time = %s\n' %(time() - loopTime))
+            # f.write('\tloop time = %s\n' %(time() - loopTime))
             print('\tloop time = %s' %(time() - loopTime))
     
-        f.write('total getCrossDict time = %s\n\n' %(time() - startTime))
+        # f.write('total getCrossDict time = %s\n\n' %(time() - startTime))
         print('total getCrossDict time = %s\n' %(time() - startTime))
 
     return cross_dict
@@ -198,7 +198,7 @@ def getGDict(
                         kptBandi_dict[j] = wave_dict  # indices start from 0
                 kptBand_dict[i] = kptBandi_dict 
     
-            out.write('total getGDict time = %s\n\n' %(time() - startTime))
+            # out.write('total getGDict time = %s\n\n' %(time() - startTime))
             print('total getGDict time = %s\n' %(time() - startTime))
     
         return kptBand_dict
@@ -250,7 +250,7 @@ def getDifCrossDict(
             
         transStartTime = time()
         readTime = transStartTime - startTime
-        f.write('read time = %s\n\n' %readTime)
+        # f.write('read time = %s\n\n' %readTime)
         f.write('selecting all physically allowed p3 for each p2\n')
         print('read time = %s\n' %readTime)
         print('selecting all physically allowed p3 for each p2')
@@ -266,7 +266,7 @@ def getDifCrossDict(
         numTrans = sum([len(trans_dict[i2]) for i2 in trans_dict]) 
 
         f.write('number of transitions = %s\n' %numTrans)
-        f.write('transition selection time = %s\n' %transTime)
+        # f.write('transition selection time = %s\n' %transTime)
         f.write('\ncalculating differential cross sections\n')
         print('number of transitions = %s' %numTrans)
         print('transition selection time = %s' %transTime)
@@ -280,11 +280,11 @@ def getDifCrossDict(
         endTime = time()
         crossTime = endTime - crossStartTime
 
-        f.write('transition calculations time = %s\n' %transTime)
-        f.write('\nread time = %s\n' %readTime)
-        f.write('transition calculations time = %s\n' %transTime)
-        f.write('cross calculation time = %s\n' %crossTime)
-        f.write('total getDifCross time = %s\n\n' %(endTime - startTime))
+        # f.write('transition calculations time = %s\n' %transTime)
+        # f.write('\nread time = %s\n' %readTime)
+        # f.write('transition calculations time = %s\n' %transTime)
+        # f.write('cross calculation time = %s\n' %crossTime)
+        # f.write('total getDifCross time = %s\n\n' %(endTime - startTime))
         print('cross calculation time = %s' %crossTime)
         print('\nread time = %s' %readTime)
         print('transition calculations time = %s' %transTime)
@@ -442,7 +442,7 @@ def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
                     trans_i2i3_dict[(k2x, k2y, k2z)] = trans_i2i3k2_dict
                 trans_i2_dict[i3] = trans_i2i3_dict
             trans_dict[i2] = trans_i2_dict
-            f.write('\tloop time = %s\n' % (time() - loopTime))
+            # f.write('\tloop time = %s\n' % (time() - loopTime))
             print('\tloop time = %s' % (time() - loopTime))
 
     # count how many times each p3z was scattered into

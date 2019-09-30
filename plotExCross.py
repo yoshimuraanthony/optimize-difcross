@@ -128,7 +128,7 @@ def writeData(
 
     with open(progress, 'a') as f:
         f.write('\ntotal excitation cross section = %s\n' %totCross)
-        f.write('total writeData time = %s\n' %(time() - startTime))
+        # f.write('total writeData time = %s\n' %(time() - startTime))
         print('\ntotal excitation cross section = %s' %totCross)
         print('total writeData time = %s' %(time() - startTime))
     

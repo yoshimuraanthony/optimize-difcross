@@ -1,23 +1,12 @@
 	selecting transitions for k-point 0
-	loop time = 1.1289143562316895
 	selecting transitions for k-point 1
-	loop time = 1.0727570056915283
 	selecting transitions for k-point 2
-	loop time = 1.0690147876739502
 obtaining coefficients for kpt 1 of 3
 obtaining coefficients for kpt 2 of 3
 obtaining coefficients for kpt 3 of 3
-total getGDict time = 0.11078476905822754
-
 summing cross sections for all ground state excitations
 	summing from kpt 0
-	loop time = 3.459543466567993
 	summing from kpt 1
-	loop time = 3.776981830596924
 	summing from kpt 2
-	loop time = 3.105977773666382
-total getCrossDict time = 10.342679023742676
-
 
 total excitation cross section = 2.939629071591784e-11
-total writeData time = 23.97558355331421
