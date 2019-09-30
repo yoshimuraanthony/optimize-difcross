@@ -1,2 +1,3 @@
 *.prof
+__pycache__
 .idea
