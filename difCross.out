@@ -1,0 +1,78 @@
+Eb = 80000.0
+
+obtained 677 waves at k-point 0
+number of (kx, ky) pairs in p3_i_dict: 37
+obtained 646 waves at k-point 1
+number of (kx, ky) pairs in p3_i_dict: 34
+obtained 642 waves at k-point 2
+number of (kx, ky) pairs in p3_i_dict: 36
+read time = 3.8613600730895996
+
+selecting all physically allowed p3 for each p2
+all bestK3z's:
+	k3z	p3z		count
+	-13,	-1.612e+04 eV	114
+	-13,	-1.612e+04 eV	158
+	-12,	-1.488e+04 eV	174
+	-12,	-1.488e+04 eV	736
+	-11,	-1.364e+04 eV	726
+	-11,	-1.364e+04 eV	1149
+	-10,	-1.24e+04 eV	1339
+	-10,	-1.24e+04 eV	2201
+	-9,	-1.116e+04 eV	1071
+	-9,	-1.116e+04 eV	3251
+	-8,	-9919 eV	1213
+	-8,	-9919 eV	4497
+	-7,	-8679 eV	5018
+	-7,	-8679 eV	4713
+	-6,	-7439 eV	2558
+	-6,	-7439 eV	5150
+	-5,	-6199 eV	2620
+	-5,	-6199 eV	5568
+	-4,	-4959 eV	2740
+	-4,	-4959 eV	7762
+	-3,	-3720 eV	6753
+	-3,	-3720 eV	7171
+	-2,	-2480 eV	3619
+	-2,	-2480 eV	6271
+	-1,	-1240 eV	3758
+	-1,	-1240 eV	11469
+	0,	0 eV	3848
+	0,	1.565e-12 eV	7253
+	1,	1240 eV	3843
+	1,	1240 eV	12725
+	2,	2480 eV	3732
+	2,	2480 eV	6419
+	3,	3720 eV	7816
+	3,	3720 eV	7665
+	4,	4959 eV	2897
+	4,	4959 eV	8729
+	5,	6199 eV	2699
+	5,	6199 eV	5957
+	6,	7439 eV	2600
+	6,	7439 eV	5421
+	7,	8679 eV	6412
+	7,	8679 eV	5269
+	8,	9919 eV	1303
+	8,	9919 eV	5483
+	9,	1.116e+04 eV	1143
+	9,	1.116e+04 eV	3888
+	10,	1.24e+04 eV	1631
+	10,	1.24e+04 eV	2615
+	11,	1.364e+04 eV	813
+	11,	1.364e+04 eV	1268
+	12,	1.488e+04 eV	174
+	12,	1.488e+04 eV	746
+	13,	1.612e+04 eV	114
+	13,	1.612e+04 eV	158
+number of transitions = 9
+transition selection time = 3.382528781890869
+
+calculating differential cross sections
+transition calculations time = 3.382528781890869
+
+read time = 3.8613600730895996
+transition calculations time = 3.382528781890869
+cross calculation time = 6.21523380279541
+total getDifCross time = 13.459122657775879
+
