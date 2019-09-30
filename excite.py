@@ -315,11 +315,11 @@ def readWavecar(infile):
         spin = int(f.readline().strip())
         nkpts = int(f.readline().strip())
 
-        for n in range(4):
+        for _ in range(4):
             f.readline()
 
         rCell = []
-        for n in range(3):
+        for _ in range(3):
             rCell.append([float(val) for val in f.readline().split()])
         rCell = array(rCell) * invÅtoEV  # multiply here instead of in loop
         bz = norm(rCell[2])
@@ -358,22 +358,15 @@ def readWavecar(infile):
 
             p2_dict[i] = p2_i_dict
 
-    p3_dict = deleteEmptyDictionaries(nkpts, p3_dict)
+    # Delete empty dictionaries
+    for i in list(p3_dict):
+        for k in list(p3_dict[i]):
+            if len(p3_dict[i][k]) == 1:
+                del p3_dict[i][k]
+        if i not in range(nkpts):
+            del p3_dict[i]
+
     return nkpts, p2_dict, p3_dict
-
-
-def deleteEmptyDictionaries(nkpts, p3_dict):
-    newp3_dict = {}
-    for i in range(nkpts):
-        newp3_i_dict = {}
-        p3_i_dict = p3_dict[i]
-        for kx, ky in p3_i_dict:
-            kz_list = p3_i_dict[(kx, ky)]
-            if len(kz_list) > 2:
-                newp3_i_dict[(kx, ky)] = kz_list
-        newp3_dict[i] = newp3_i_dict
-    p3_dict = newp3_dict
-    return p3_dict
 
 
 def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
@@ -389,26 +382,23 @@ def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
             loopTime = time()
             f.write('\tselecting transitions for k-point %s\n' % i2)
             print('\tselecting transitions for k-point %s' % i2)
-            p2_i2_dict = p2_dict[i2]
             trans_i2_dict = {}
 
             for i3 in range(nkpts):
-                p3_i3_dict = p3_dict[i3]
                 trans_i2i3_dict = {}
 
-                for k2x, k2y, k2z in p2_i2_dict:
-                    p2_ar = p2_i2_dict[(k2x, k2y, k2z)]
+                for (k2x, k2y, k2z), p2_ar in p2_dict[i2].items():
                     E2, p2x, p2y, p2z = p2_ar
                     trans_i2i3k2_dict = {}
 
-                    for k3x, k3y in p3_i3_dict:
+                    for k3x, k3y in p3_dict[i3]:
 
                         # ignore zero-scattering scenario
                         if (k2x, k2y) == (k3x, k3y):
                             continue
 
                         # calculate trueP3z that conserves of momentum
-                        k3z_dict, p3x, p3y = p3_i3_dict[(k3x, k3y)]
+                        k3z_dict, p3x, p3y = p3_dict[i3][(k3x, k3y)]
                         gammap = gamma + 1
                         trueP3z = (p1 + p2z - (
                             (p1 + p2z) ** 2
@@ -421,16 +411,16 @@ def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
                         # find closest k3z for given k3x, k3y pair
                         minP3zDiff = invÅtomeV
                         for k3z in k3z_dict:
-                            E3, p3z = k3z_dict[k3z]
+                            _, p3z = k3z_dict[k3z]
                             p3zDiff = abs(p3z - trueP3z)
 
                             if p3zDiff < minP3zDiff:
                                 minP3zDiff = p3zDiff
                                 bestK3z = k3z
                                 bestP3z = p3z
-                                bestE3 = E3
 
                         # store closest k3z in k3_dict
+                        bestE3, _ = k3z_dict[bestK3z]
                         bestK3_key = (k3x, k3y, bestK3z)
                         bestP3_ar = array([bestE3, p3x, p3y, bestP3z])
                         bestP4_ar = p1_ar + p2_ar - bestP3_ar
@@ -453,7 +443,7 @@ def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
                 bestK3z_dict[(bestK3z, bestP3z)] += 1
             else:
                 bestK3z_dict[(bestK3z, bestP3z)] = 0
-        possible_list = [(k3z, p3z, bestK3z_dict[(k3z, p3z)]) \
+        possible_list = [(k3z, p3z, bestK3z_dict[(k3z, p3z)])
                          for k3z, p3z in bestK3z_dict]
         possible_list.sort()
         f.write("all bestK3z's:\n")
