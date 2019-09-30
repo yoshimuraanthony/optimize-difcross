@@ -232,79 +232,7 @@ def getDifCrossDict(
     p1 = (E1**2 - m**2)**.5
     p1_ar = array([E1, 0, 0, p1])
 
-    # for each k3x, k3y pair, store one dictionary for each k3z
-    #     need to prepare dictionary structure beforehand since k's are read
-    #     off from one long unordered list
-    p2_dict = {}
-    p3_dict = {}
-    for i in range(200):
-        p3_dict[i] = {}
-        for j in range(-60, 61): # 20 Å with 600 eV maxed at 33 waves
-            for k in range(-60, 61):  # j and k are recip. lat. coords
-                p3_dict[i][(j, k)] = [{}] # [{k3z: p3_ar}, p3x, p3y]
-                                            # so that p3x, p3y are stored once
-
-    # record all momenta listed in WAVECAR
-    print('storing all plane waves')
-    with open(infile) as f:
-
-        spin = int(f.readline().strip())
-        nkpts = int(f.readline().strip())
-
-        for n in range(4):
-            f.readline()
-
-        rCell = []
-        for n in range(3):
-            rCell.append([float(val) for val in f.readline().split()])
-        rCell = array(rCell) * invÅtoEV  # multiply here instead of in loop
-        bz = norm(rCell[2])
-        f.readline()
-
-        crystalP_ar = zeros(3)  # assume first k-point is gamma
-        for i in range(nkpts):
-            p2_i_dict = {}
-            nwaves = int(f.readline().split()[-1])
-            print('\tstoring %s waves at k-point %s: %s'
-                  %(nwaves, i, crystalP_ar/invÅtoEV))
-            f.readline()
-    
-            # store each p3 in each k3z_dict
-            for j in range(nwaves):
-                # MUST ACCTOUNT for crystal momentum!
-                k_ar = array([int(val) for val in f.readline().split()[:3]])
-                p_ar = dot(k_ar, rCell) + crystalP_ar
-                px, py, pz = p_ar
-                E = (sum([comp**2 for comp in p_ar]) + m**2)**.5
-                p_ar = insert(p_ar, 0, E) # make p_ar a 4-vector
-    
-                # store material momentum
-                kx, ky, kz = k_ar
-                p2_i_dict[(kx, ky, kz)] = p_ar
-                k3z_list = p3_dict[i][(kx, ky)]
-                k3z_list[0][kz] = (E, pz)
-                if len(k3z_list) == 1:
-                    p3_dict[i][(kx, ky)] += [px, py]
-
-            for line in f:
-                if '.' in line[:5]:
-                    kpt = array([float(val) for val in line.split()])
-                    crystalP_ar = dot(kpt, rCell)
-                    break
-
-            p2_dict[i] = p2_i_dict
-
-    # delete empty dictionaries
-    newp3_dict = {}
-    for i in range(nkpts):
-        newp3_i_dict = {}
-        p3_i_dict = p3_dict[i]
-        for kx, ky in p3_i_dict:
-            kz_list = p3_i_dict[(kx, ky)]
-            if len(kz_list) > 2:
-                newp3_i_dict[(kx, ky)] = kz_list
-        newp3_dict[i] = newp3_i_dict
-    p3_dict = newp3_dict
+    nkpts, p2_dict, p3_dict = readWavecar(infile)
 
     # check point
     with open(outfile, 'w') as f:
@@ -328,84 +256,8 @@ def getDifCrossDict(
         print('selecting all physically allowed p3 for each p2')
             
     # track number of times each p3z and k3z are scattered into
-    bestK3z_list = []
-    bestP3z_list = [] # count number of p3z's for debugging
-
-    # get all physically allowed transitions between pairs of plane waves
-    with open(progress, 'w') as f:
-        trans_dict = {}  # dict with dicts for each k2 containing allowed k3s
-
-        for i2 in range(nkpts):
-            loopTime = time()
-            f.write('\tselecting transitions for k-point %s\n' %i2)
-            print('\tselecting transitions for k-point %s' %i2)
-            p2_i2_dict = p2_dict[i2]
-            trans_i2_dict = {}
-
-            for i3 in range(nkpts):
-                p3_i3_dict = p3_dict[i3]
-                trans_i2i3_dict = {}
-    
-                for k2x, k2y, k2z in p2_i2_dict:
-                    p2_ar = p2_i2_dict[(k2x, k2y, k2z)]
-                    E2, p2x, p2y, p2z = p2_ar
-                    trans_i2i3k2_dict = {}
-    
-                    for k3x, k3y in p3_i3_dict:
-            
-                        # ignore zero-scattering scenario
-                        if (k2x, k2y) == (k3x, k3y):
-                            continue
-            
-                        # calculate trueP3z that conserves of momentum
-                        k3z_dict, p3x, p3y = p3_i3_dict[(k3x, k3y)]
-                        gammap = gamma + 1
-                        trueP3z = (p1 + p2z - ((p1 + p2z)**2
-                            - 2*gammap*(p1*p2z - p2x*p3x - p2y*p3y
-                            + gammap*(p3x**2 + p3y**2)/2))**.5)/gammap
-                    
-                        # find closest k3z for given k3x, k3y pair
-                        minP3zDiff = invÅtomeV
-                        for k3z in k3z_dict:
-                            E3, p3z = k3z_dict[k3z]
-                            p3zDiff = abs(p3z - trueP3z)
-            
-                            if p3zDiff < minP3zDiff:
-                                minP3zDiff = p3zDiff
-                                bestK3z = k3z
-                                bestP3z = p3z
-                                bestE3 = E3
-            
-                        # store closest k3z in k3_dict
-                        bestK3_key = (k3x, k3y, bestK3z)
-                        bestP3_ar = array([bestE3, p3x, p3y, bestP3z])
-                        bestP4_ar = p1_ar + p2_ar - bestP3_ar
-                        trans_i2i3k2_dict[bestK3_key] = (p2_ar, bestP3_ar,
-                                                         bestP4_ar)
-                        bestK3z_list.append(bestK3z) # for debugging
-                        bestP3z_list.append(bestP3_ar[-1])
-    
-                    trans_i2i3_dict[(k2x, k2y, k2z)] = trans_i2i3k2_dict
-                trans_i2_dict[i3] = trans_i2i3_dict
-            trans_dict[i2] = trans_i2_dict
-            f.write('\tloop time = %s\n' %(time() - loopTime))
-            print('\tloop time = %s' %(time() - loopTime))
-
-    # count how many times each p3z was scattered into
-    with open(outfile, 'a') as f:
-        bestK3z_dict = {}
-        for bestK3z, bestP3z in zip(bestK3z_list, bestP3z_list):    
-            if (bestK3z, bestP3z) in bestK3z_dict:
-                bestK3z_dict[(bestK3z, bestP3z)] += 1
-            else:
-                bestK3z_dict[(bestK3z, bestP3z)] = 0
-        possible_list = [(k3z, p3z, bestK3z_dict[(k3z, p3z)])\
-                         for k3z, p3z in bestK3z_dict]
-        possible_list.sort()
-        f.write("all bestK3z's:\n")
-        f.write('\tk3z\tp3z\t\tcount\n')
-        for k3z, p3z, count in possible_list:
-            f.write('\t%s,\t%.4g eV\t%s\n' %(k3z, p3z, count))
+    trans_dict = getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar,
+                                       p2_dict, p3_dict, progress)
 
     # check point
     with open(outfile, 'a') as f:
@@ -421,32 +273,8 @@ def getDifCrossDict(
         print('\ncalculating differential cross sections')
 
     # find dif cross section for each physically allowed momentum transfer
-    difCross_dict = {}
-    for i2 in range(nkpts):
-        loopTime = time()
-        print('\tcalculating differential cross section at k-point %s' %i2)
+    difCross_dict = computeDifCrossDict(nkpts, p1_ar, trans_dict)
 
-        trans_i2_dict = trans_dict[i2]
-        difCross_i2_dict = {}
-
-        for i3 in range(nkpts):
-            trans_i2i3_dict = trans_i2_dict[i3]
-            difCross_i2i3_dict = {}
-
-            for k2 in trans_i2i3_dict:
-                trans_i2i3k2_dict = trans_i2i3_dict[k2]
-                difCross_i2i3k2_dict = {}
-
-                for k3 in trans_i2i3k2_dict:
-                    p2_ar, p3_ar, p4_ar = trans_i2i3k2_dict[k3]
-                    difCross = getProbOfP3(p1_ar, p2_ar, p3_ar, p4_ar)
-                    difCross_i2i3k2_dict[k3] = (difCross, p3_ar)
-    
-                difCross_i2i3_dict[k2] = difCross_i2i3k2_dict
-            difCross_i2_dict[i3] = difCross_i2i3_dict
-        difCross_dict[i2] = difCross_i2_dict
-        print('\tloop time = %s' %(time() - loopTime))
-        
     # check point
     with open(outfile, 'a') as f:
         endTime = time()
@@ -466,6 +294,205 @@ def getDifCrossDict(
     return difCross_dict
 
 
+
+def readWavecar(infile):
+    # for each k3x, k3y pair, store one dictionary for each k3z
+    #     need to prepare dictionary structure beforehand since k's are read
+    #     off from one long unordered list
+    p2_dict = {} # p2_dict[nkpts][(kx, ky, kz)][4]
+    p3_dict = {} # p3_dict[nkpts][(kx, ky)] = ({k3z: [4]}, p3x, p3y)
+    for i in range(200):
+        p3_dict[i] = {}
+        for j in range(-60, 61):  # 20 Å with 600 eV maxed at 33 waves
+            for k in range(-60, 61):  # j and k are recip. lat. coords
+                p3_dict[i][(j, k)] = [{}]  # [{k3z: p3_ar}, p3x, p3y]
+                # so that p3x, p3y are stored once
+
+    # record all momenta listed in WAVECAR
+    print('storing all plane waves')
+    with open(infile) as f:
+
+        spin = int(f.readline().strip())
+        nkpts = int(f.readline().strip())
+
+        for n in range(4):
+            f.readline()
+
+        rCell = []
+        for n in range(3):
+            rCell.append([float(val) for val in f.readline().split()])
+        rCell = array(rCell) * invÅtoEV  # multiply here instead of in loop
+        bz = norm(rCell[2])
+        f.readline()
+
+        crystalP_ar = zeros(3)  # assume first k-point is gamma
+        for i in range(nkpts):
+            p2_i_dict = {}
+            nwaves = int(f.readline().split()[-1])
+            print('\tstoring %s waves at k-point %s: %s'
+                  % (nwaves, i, crystalP_ar / invÅtoEV))
+            f.readline()
+
+            # store each p3 in each k3z_dict
+            for j in range(nwaves):
+                # MUST ACCTOUNT for crystal momentum!
+                k_ar = array([int(val) for val in f.readline().split()[:3]])
+                p_ar = dot(k_ar, rCell) + crystalP_ar
+                px, py, pz = p_ar
+                E = (sum([comp ** 2 for comp in p_ar]) + m ** 2) ** .5
+                p_ar = insert(p_ar, 0, E)  # make p_ar a 4-vector
+
+                # store material momentum
+                kx, ky, kz = k_ar
+                p2_i_dict[(kx, ky, kz)] = p_ar
+                k3z_list = p3_dict[i][(kx, ky)]
+                k3z_list[0][kz] = (E, pz)
+                if len(k3z_list) == 1:
+                    p3_dict[i][(kx, ky)] += [px, py]
+
+            for line in f:
+                if '.' in line[:5]:
+                    kpt = array([float(val) for val in line.split()])
+                    crystalP_ar = dot(kpt, rCell)
+                    break
+
+            p2_dict[i] = p2_i_dict
+
+    p3_dict = deleteEmptyDictionaries(nkpts, p3_dict)
+    return nkpts, p2_dict, p3_dict
+
+
+def deleteEmptyDictionaries(nkpts, p3_dict):
+    newp3_dict = {}
+    for i in range(nkpts):
+        newp3_i_dict = {}
+        p3_i_dict = p3_dict[i]
+        for kx, ky in p3_i_dict:
+            kz_list = p3_i_dict[(kx, ky)]
+            if len(kz_list) > 2:
+                newp3_i_dict[(kx, ky)] = kz_list
+        newp3_dict[i] = newp3_i_dict
+    p3_dict = newp3_dict
+    return p3_dict
+
+
+def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
+                          progress):
+    bestK3z_list = []
+    bestP3z_list = []  # count number of p3z's for debugging
+    # get all physically allowed transitions between pairs of plane waves
+    with open(progress, 'w') as f:
+        # trans_dict[kpt2][kpt3][(k2x, k2y, k2z)][(k3x, k3y, k3z)] = ([4], [4], [4])
+        trans_dict = {}  # dict with dicts for each k2 containing allowed k3s
+
+        for i2 in range(nkpts):
+            loopTime = time()
+            f.write('\tselecting transitions for k-point %s\n' % i2)
+            print('\tselecting transitions for k-point %s' % i2)
+            p2_i2_dict = p2_dict[i2]
+            trans_i2_dict = {}
+
+            for i3 in range(nkpts):
+                p3_i3_dict = p3_dict[i3]
+                trans_i2i3_dict = {}
+
+                for k2x, k2y, k2z in p2_i2_dict:
+                    p2_ar = p2_i2_dict[(k2x, k2y, k2z)]
+                    E2, p2x, p2y, p2z = p2_ar
+                    trans_i2i3k2_dict = {}
+
+                    for k3x, k3y in p3_i3_dict:
+
+                        # ignore zero-scattering scenario
+                        if (k2x, k2y) == (k3x, k3y):
+                            continue
+
+                        # calculate trueP3z that conserves of momentum
+                        k3z_dict, p3x, p3y = p3_i3_dict[(k3x, k3y)]
+                        gammap = gamma + 1
+                        trueP3z = (p1 + p2z - (
+                            (p1 + p2z) ** 2
+                            - 2 * gammap * (
+                                p1 * p2z - p2x * p3x - p2y * p3y
+                                + 0.5 * gammap * (p3x ** 2 + p3y ** 2)
+                            )
+                        ) ** .5) / gammap
+
+                        # find closest k3z for given k3x, k3y pair
+                        minP3zDiff = invÅtomeV
+                        for k3z in k3z_dict:
+                            E3, p3z = k3z_dict[k3z]
+                            p3zDiff = abs(p3z - trueP3z)
+
+                            if p3zDiff < minP3zDiff:
+                                minP3zDiff = p3zDiff
+                                bestK3z = k3z
+                                bestP3z = p3z
+                                bestE3 = E3
+
+                        # store closest k3z in k3_dict
+                        bestK3_key = (k3x, k3y, bestK3z)
+                        bestP3_ar = array([bestE3, p3x, p3y, bestP3z])
+                        bestP4_ar = p1_ar + p2_ar - bestP3_ar
+                        trans_i2i3k2_dict[bestK3_key] = (p2_ar, bestP3_ar,
+                                                         bestP4_ar)
+                        bestK3z_list.append(bestK3z)  # for debugging
+                        bestP3z_list.append(bestP3_ar[-1])
+
+                    trans_i2i3_dict[(k2x, k2y, k2z)] = trans_i2i3k2_dict
+                trans_i2_dict[i3] = trans_i2i3_dict
+            trans_dict[i2] = trans_i2_dict
+            f.write('\tloop time = %s\n' % (time() - loopTime))
+            print('\tloop time = %s' % (time() - loopTime))
+
+    # count how many times each p3z was scattered into
+    with open(outfile, 'a') as f:
+        bestK3z_dict = {}
+        for bestK3z, bestP3z in zip(bestK3z_list, bestP3z_list):
+            if (bestK3z, bestP3z) in bestK3z_dict:
+                bestK3z_dict[(bestK3z, bestP3z)] += 1
+            else:
+                bestK3z_dict[(bestK3z, bestP3z)] = 0
+        possible_list = [(k3z, p3z, bestK3z_dict[(k3z, p3z)]) \
+                         for k3z, p3z in bestK3z_dict]
+        possible_list.sort()
+        f.write("all bestK3z's:\n")
+        f.write('\tk3z\tp3z\t\tcount\n')
+        for k3z, p3z, count in possible_list:
+            f.write('\t%s,\t%.4g eV\t%s\n' % (k3z, p3z, count))
+    return trans_dict
+
+
+def computeDifCrossDict(nkpts, p1_ar, trans_dict):
+    # difCross_dict[kpt2][kpt3][(k2x, k2y, k2z)][(k3x, k3y, k3z)]: (float, [4])
+    difCross_dict = {}
+    for i2 in range(nkpts):
+        loopTime = time()
+        print('\tcalculating differential cross section at k-point %s' % i2)
+
+        trans_i2_dict = trans_dict[i2]
+        difCross_i2_dict = {}
+
+        for i3 in range(nkpts):
+            trans_i2i3_dict = trans_i2_dict[i3]
+            difCross_i2i3_dict = {}
+
+            for k2 in trans_i2i3_dict:
+                trans_i2i3k2_dict = trans_i2i3_dict[k2]
+                difCross_i2i3k2_dict = {}
+
+                for k3 in trans_i2i3k2_dict:
+                    p2_ar, p3_ar, p4_ar = trans_i2i3k2_dict[k3]
+                    difCross = getProbOfP3(p1_ar, p2_ar, p3_ar, p4_ar)
+                    difCross_i2i3k2_dict[k3] = (difCross, p3_ar)
+
+                difCross_i2i3_dict[k2] = difCross_i2i3k2_dict
+            difCross_i2_dict[i3] = difCross_i2i3_dict
+        difCross_dict[i2] = difCross_i2_dict
+        print('\tloop time = %s' % (time() - loopTime))
+    return difCross_dict
+
+
 def getProperties(infile = 'OUTCAR'):
     """
     returns number of bands, number of electrons and k-point weights from
@@ -477,7 +504,7 @@ def getProperties(infile = 'OUTCAR'):
 
             if 'Following reciprocal' in line:
                 f.readline()
-                wt_list = [] 
+                wt_list = []
                 for line in f:
                     if len(line) > 10:
                         wt = float(line.split()[-1])
