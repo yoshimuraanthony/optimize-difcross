@@ -410,8 +410,7 @@ def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
                         bestE3, _ = k3z_dict[bestK3z]
                         bestK3_key = (k3x, k3y, bestK3z)
                         bestP3_ar = array([bestE3, p3x, p3y, bestP3z])
-                        bestP4_ar = p1_ar + p2_ar - bestP3_ar
-                        trans_dict[i2][i3][k2][bestK3_key] = (p2_ar, bestP3_ar, bestP4_ar)
+                        trans_dict[i2][i3][k2][bestK3_key] = (p2_ar, bestP3_ar)
                         bestK3z_list.append(bestK3z)  # for debugging
                         bestP3z_list.append(bestP3_ar[-1])
 
@@ -439,8 +438,8 @@ def computeDifCrossDict(p1_ar, trans_dict):
         i2: {
             i3: {
                 k2: {
-                    k3: (getProbOfP3(p1_ar, p2_ar, p3_ar, p4_ar), p3_ar)
-                    for k3, (p2_ar, p3_ar, p4_ar) in trans_dict[i2][i3][k2].items()
+                    k3: (getProbOfP3(p1_ar, p2_ar, p3_ar), p3_ar)
+                    for k3, (p2_ar, p3_ar) in trans_dict[i2][i3][k2].items()
                 } for k2 in trans_dict[i2][i3]
             } for i3 in trans_dict[i2]
         } for i2 in traceLoopTime(trans_dict, 'calculating differential cross section at k-point %s')

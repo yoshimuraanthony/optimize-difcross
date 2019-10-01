@@ -26,7 +26,7 @@ Want likelihood of transfering certain momentum p3 to valence electron given
 beam energy Eb, all in eV.
 """
 
-def getProbOfP3(p1_ar, p2_ar, p3_ar, p4_ar):
+def getProbOfP3(p1_ar, p2_ar, p3_ar, p4_ar=None):
     """
     returns Moller differential cross section in LAB frame for
         electron-electron scattering into differential momentum element
@@ -37,6 +37,9 @@ def getProbOfP3(p1_ar, p2_ar, p3_ar, p4_ar):
           excited.getDifCrossDict()
     pn_ar: initial material 4-momentum in eV (array of 4 floats)
     """
+    if p4_ar is None:
+        p4_ar = p1_ar + p2_ar - p3_ar
+
     E1, p1x, p1y, p1z = p1_ar
     E2, p2x, p2y, p2z = p2_ar
     E3, p3x, p3y, p3z = p3_ar
