@@ -351,50 +351,12 @@ def computeDifCrossDict(gamma, outfile, p1, p1_ar, p2_dict, p3_dict,
             difCross_dict[i2] = {}
 
             for i3 in p3_dict:
-                difCross_dict[i2][i3] = {}
-
-                for k2, p2_ar in p2_dict[i2].items():
-                    difCross_dict[i2][i3][k2] = {}
-                    (k2x, k2y, k2z) = k2
-                    E2, p2x, p2y, p2z = p2_ar
-
-                    for k3x, k3y in p3_dict[i3]:
-
-                        # ignore zero-scattering scenario
-                        if (k2x, k2y) == (k3x, k3y):
-                            continue
-
-                        # calculate trueP3z that conserves of momentum
-                        k3z_dict, p3x, p3y = p3_dict[i3][(k3x, k3y)]
-                        gammap = gamma + 1
-                        trueP3z = (p1 + p2z - (
-                            (p1 + p2z) ** 2
-                            - 2 * gammap * (
-                                p1 * p2z - p2x * p3x - p2y * p3y
-                                + 0.5 * gammap * (p3x ** 2 + p3y ** 2)
-                            )
-                        ) ** .5) / gammap
-
-                        # find closest k3z for given k3x, k3y pair
-                        minP3zDiff = invÅtomeV
-                        for k3z in k3z_dict:
-                            _, p3z = k3z_dict[k3z]
-                            p3zDiff = abs(p3z - trueP3z)
-
-                            if p3zDiff < minP3zDiff:
-                                minP3zDiff = p3zDiff
-                                bestK3z = k3z
-                                bestP3z = p3z
-
-                        # store closest k3z in k3_dict
-                        bestE3, _ = k3z_dict[bestK3z]
-                        bestK3_key = (k3x, k3y, bestK3z)
-                        bestP3_ar = array([bestE3, p3x, p3y, bestP3z])
-
-                        difCross = getProbOfP3(p1_ar, p2_ar, bestP3_ar)
-                        difCross_dict[i2][i3][k2][bestK3_key] = (difCross, bestP3_ar)
-                        bestK3z_list.append(bestK3z)  # for debugging
-                        bestP3z_list.append(bestP3_ar[-1])
+                difCross_dict[i2][i3] = getDifCrossDictAtKpoints(gamma, p1,
+                                                                 p1_ar,
+                                                                 p2_dict[i2],
+                                                                 p3_dict[i3],
+                                                                 bestK3z_list,
+                                                                 bestP3z_list)
 
     # count how many times each p3z was scattered into
     with open(outfile, 'a') as f:
@@ -412,6 +374,54 @@ def computeDifCrossDict(gamma, outfile, p1, p1_ar, p2_dict, p3_dict,
         for k3z, p3z, count in possible_list:
             f.write('\t%s,\t%.4g eV\t%s\n' % (k3z, p3z, count))
     return difCross_dict
+
+
+def getDifCrossDictAtKpoints(gamma, p1, p1_ar, p2_i2_dict, p3_i3_dict,
+                             bestK3z_list, bestP3z_list):
+    difCross_i2i3_dict = {}
+    for k2, p2_ar in p2_i2_dict.items():
+        difCross_i2i3_dict[k2] = {}
+        (k2x, k2y, k2z) = k2
+        E2, p2x, p2y, p2z = p2_ar
+
+        for k3x, k3y in p3_i3_dict:
+
+            # ignore zero-scattering scenario
+            if (k2x, k2y) == (k3x, k3y):
+                continue
+
+            # calculate trueP3z that conserves of momentum
+            k3z_dict, p3x, p3y = p3_i3_dict[(k3x, k3y)]
+            gammap = gamma + 1
+            trueP3z = (p1 + p2z - (
+                (p1 + p2z) ** 2
+                - 2 * gammap * (
+                    p1 * p2z - p2x * p3x - p2y * p3y
+                    + 0.5 * gammap * (p3x ** 2 + p3y ** 2)
+                )
+            ) ** .5) / gammap
+
+            # find closest k3z for given k3x, k3y pair
+            minP3zDiff = invÅtomeV
+            for k3z in k3z_dict:
+                _, p3z = k3z_dict[k3z]
+                p3zDiff = abs(p3z - trueP3z)
+
+                if p3zDiff < minP3zDiff:
+                    minP3zDiff = p3zDiff
+                    bestK3z = k3z
+                    bestP3z = p3z
+
+            # store closest k3z in k3_dict
+            bestE3, _ = k3z_dict[bestK3z]
+            bestK3_key = (k3x, k3y, bestK3z)
+            bestP3_ar = array([bestE3, p3x, p3y, bestP3z])
+
+            difCross = getProbOfP3(p1_ar, p2_ar, bestP3_ar)
+            difCross_i2i3_dict[k2][bestK3_key] = (difCross, bestP3_ar)
+            bestK3z_list.append(bestK3z)  # for debugging
+            bestP3z_list.append(bestP3_ar[-1])
+    return difCross_i2i3_dict
 
 
 def traceLoopTime(iterable, msg, outfile=None):
