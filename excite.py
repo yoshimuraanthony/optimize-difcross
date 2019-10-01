@@ -114,10 +114,10 @@ def getCrossDict(
             for i3, wt3 in enumerate(wt_list):
                 cross_dict[i2][i3] = {}
         
-                for vb in range(occ):
+                for vb in vb_list:
                     cross_dict[i2][i3][vb] = {}
 
-                    for cb in range(occ, nbands):
+                    for cb in cb_list:
                         cross_i2i3vbcb = sum(
                             G_dict[i2][vb][k2]
                             * difCross_dict[i2][i3][k2][k3][0]
