@@ -232,33 +232,19 @@ def getDifCrossDict(
             print('obtained %s waves at k-point %s' %(nwaves, i))
             print('number of (kx, ky) pairs in p3_i_dict: %s'
                     %len(p3_i_dict))
-            
-        transStartTime = time()
-        readTime = transStartTime - startTime
+
+        crossStartTime = time()
+        readTime = crossStartTime - startTime
         # f.write('read time = %s\n\n' %readTime)
         f.write('selecting all physically allowed p3 for each p2\n')
         print('read time = %s\n' %readTime)
-        print('selecting all physically allowed p3 for each p2')
-            
-    # track number of times each p3z and k3z are scattered into
-    trans_dict = getAllowedTransitions(gamma, outfile, p1, p1_ar,
-                                       p2_dict, p3_dict, progress)
-
-    # check point
-    with open(outfile, 'a') as f:
-        crossStartTime = time()
-        transTime = crossStartTime - transStartTime
-        numTrans = sum([len(trans_dict[i2]) for i2 in trans_dict]) 
-
-        f.write('number of transitions = %s\n' %numTrans)
-        # f.write('transition selection time = %s\n' %transTime)
         f.write('\ncalculating differential cross sections\n')
-        print('number of transitions = %s' %numTrans)
-        print('transition selection time = %s' %transTime)
-        print('\ncalculating differential cross sections')
+        print('calculating differential cross sections')
 
+    # track number of times each p3z and k3z are scattered into.
     # find dif cross section for each physically allowed momentum transfer
-    difCross_dict = computeDifCrossDict(p1_ar, trans_dict)
+    difCross_dict = computeDifCrossDict(gamma, outfile, p1, p1_ar,
+                                        p2_dict, p3_dict, progress)
 
     # check point
     with open(outfile, 'a') as f:
@@ -272,12 +258,10 @@ def getDifCrossDict(
         # f.write('total getDifCross time = %s\n\n' %(endTime - startTime))
         print('cross calculation time = %s' %crossTime)
         print('\nread time = %s' %readTime)
-        print('transition calculations time = %s' %transTime)
         print('cross calculation time = %s' %crossTime)
         print('total getDifCross time = %s\n' %(endTime - startTime))
 
     return difCross_dict
-
 
 
 def readWavecar(infile):
@@ -354,23 +338,23 @@ def readWavecar(infile):
     return p2_dict, p3_dict
 
 
-def getAllowedTransitions(gamma, outfile, p1, p1_ar, p2_dict, p3_dict,
-                          progress):
+def computeDifCrossDict(gamma, outfile, p1, p1_ar, p2_dict, p3_dict,
+                        progress):
     bestK3z_list = []
     bestP3z_list = []  # count number of p3z's for debugging
     # get all physically allowed transitions between pairs of plane waves
     with open(progress, 'w') as f:
         # trans_dict[kpt2][kpt3][(k2x, k2y, k2z)][(k3x, k3y, k3z)] = ([4], [4], [4])
-        trans_dict = {}  # dict with dicts for each k2 containing allowed k3s
+        difCross_dict = {}  # dict with dicts for each k2 containing allowed k3s
 
-        for i2 in traceLoopTime(p2_dict, 'selecting transitions for k-point %s', f):
-            trans_dict[i2] = {}
+        for i2 in traceLoopTime(p2_dict, 'selecting transitions and calculating differential cross section for k-point %s', f):
+            difCross_dict[i2] = {}
 
             for i3 in p3_dict:
-                trans_dict[i2][i3] = {}
+                difCross_dict[i2][i3] = {}
 
                 for k2, p2_ar in p2_dict[i2].items():
-                    trans_dict[i2][i3][k2] = {}
+                    difCross_dict[i2][i3][k2] = {}
                     (k2x, k2y, k2z) = k2
                     E2, p2x, p2y, p2z = p2_ar
 
@@ -406,7 +390,9 @@ def getAllowedTransitions(gamma, outfile, p1, p1_ar, p2_dict, p3_dict,
                         bestE3, _ = k3z_dict[bestK3z]
                         bestK3_key = (k3x, k3y, bestK3z)
                         bestP3_ar = array([bestE3, p3x, p3y, bestP3z])
-                        trans_dict[i2][i3][k2][bestK3_key] = (p2_ar, bestP3_ar)
+
+                        difCross = getProbOfP3(p1_ar, p2_ar, bestP3_ar)
+                        difCross_dict[i2][i3][k2][bestK3_key] = (difCross, bestP3_ar)
                         bestK3z_list.append(bestK3z)  # for debugging
                         bestP3z_list.append(bestP3_ar[-1])
 
@@ -425,21 +411,7 @@ def getAllowedTransitions(gamma, outfile, p1, p1_ar, p2_dict, p3_dict,
         f.write('\tk3z\tp3z\t\tcount\n')
         for k3z, p3z, count in possible_list:
             f.write('\t%s,\t%.4g eV\t%s\n' % (k3z, p3z, count))
-    return trans_dict
-
-
-def computeDifCrossDict(p1_ar, trans_dict):
-    # difCross_dict[kpt2][kpt3][(k2x, k2y, k2z)][(k3x, k3y, k3z)]: (float, [4])
-    return {
-        i2: {
-            i3: {
-                k2: {
-                    k3: (getProbOfP3(p1_ar, p2_ar, p3_ar), p3_ar)
-                    for k3, (p2_ar, p3_ar) in trans_dict[i2][i3][k2].items()
-                } for k2 in trans_dict[i2][i3]
-            } for i3 in trans_dict[i2]
-        } for i2 in traceLoopTime(trans_dict, 'calculating differential cross section at k-point %s')
-    }
+    return difCross_dict
 
 
 def traceLoopTime(iterable, msg, outfile=None):

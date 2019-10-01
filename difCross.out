@@ -7,6 +7,8 @@ number of (kx, ky) pairs in p3_i_dict: 34
 obtained 642 waves at k-point 2
 number of (kx, ky) pairs in p3_i_dict: 36
 selecting all physically allowed p3 for each p2
+
+calculating differential cross sections
 all bestK3z's:
 	k3z	p3z		count
 	-13,	-1.612e+04 eV	114
@@ -63,6 +65,3 @@ all bestK3z's:
 	12,	1.488e+04 eV	746
 	13,	1.612e+04 eV	114
 	13,	1.612e+04 eV	158
-number of transitions = 9
-
-calculating differential cross sections
