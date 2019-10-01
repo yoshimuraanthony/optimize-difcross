@@ -57,15 +57,11 @@ def getTotCross(
     returns total cross section for all valence to conduction band excitations
     """
     totCross = 0
-    for i2 in cross_dict: 
-        cross_i2_dict = cross_dict[i2] 
-        for i3 in cross_i2_dict: 
-            cross_i2i3_dict = cross_i2_dict[i3] 
-            for vb in cross_i2i3_dict: 
-                cross_i2i3vb_dict = cross_i2i3_dict[vb] 
-                for cb in cross_i2i3vb_dict: 
-                    cross = cross_i2i3vb_dict[cb] 
-                    totCross += cross 
+    for i2 in cross_dict:
+        for i3 in cross_dict[i2]:
+            for vb in cross_dict[i2][i3]:
+                for cb in cross_dict[i2][i3][vb]:
+                    totCross += cross_dict[i2][i3][vb][cb]
 
     return totCross
 
@@ -221,13 +217,13 @@ def getDifCrossDict(
     p1 = (E1**2 - m**2)**.5
     p1_ar = array([E1, 0, 0, p1])
 
-    nkpts, p2_dict, p3_dict = readWavecar(infile)
+    p2_dict, p3_dict = readWavecar(infile)
 
     # check point
     with open(outfile, 'w') as f:
         f.write('Eb = %s\n\n' %Eb)
         print('Eb = %s\n' %Eb)
-        for i in range(nkpts):
+        for i in p3_dict:
             p3_i_dict = p3_dict[i]
             nwaves = sum([len(p3_i_dict[pair][0]) for pair in p3_i_dict]) 
             f.write('obtained %s waves at k-point %s\n' %(nwaves, i))
@@ -245,7 +241,7 @@ def getDifCrossDict(
         print('selecting all physically allowed p3 for each p2')
             
     # track number of times each p3z and k3z are scattered into
-    trans_dict = getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar,
+    trans_dict = getAllowedTransitions(gamma, outfile, p1, p1_ar,
                                        p2_dict, p3_dict, progress)
 
     # check point
@@ -355,10 +351,10 @@ def readWavecar(infile):
         if i not in range(nkpts):
             del p3_dict[i]
 
-    return nkpts, p2_dict, p3_dict
+    return p2_dict, p3_dict
 
 
-def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
+def getAllowedTransitions(gamma, outfile, p1, p1_ar, p2_dict, p3_dict,
                           progress):
     bestK3z_list = []
     bestP3z_list = []  # count number of p3z's for debugging
@@ -367,10 +363,10 @@ def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
         # trans_dict[kpt2][kpt3][(k2x, k2y, k2z)][(k3x, k3y, k3z)] = ([4], [4], [4])
         trans_dict = {}  # dict with dicts for each k2 containing allowed k3s
 
-        for i2 in traceLoopTime(range(nkpts), 'selecting transitions for k-point %s', f):
+        for i2 in traceLoopTime(p2_dict, 'selecting transitions for k-point %s', f):
             trans_dict[i2] = {}
 
-            for i3 in range(nkpts):
+            for i3 in p3_dict:
                 trans_dict[i2][i3] = {}
 
                 for k2, p2_ar in p2_dict[i2].items():
