@@ -273,7 +273,7 @@ def getDifCrossDict(
         print('\ncalculating differential cross sections')
 
     # find dif cross section for each physically allowed momentum transfer
-    difCross_dict = computeDifCrossDict(nkpts, p1_ar, trans_dict)
+    difCross_dict = computeDifCrossDict(p1_ar, trans_dict)
 
     # check point
     with open(outfile, 'a') as f:
@@ -453,34 +453,26 @@ def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
     return trans_dict
 
 
-def computeDifCrossDict(nkpts, p1_ar, trans_dict):
+def computeDifCrossDict(p1_ar, trans_dict):
     # difCross_dict[kpt2][kpt3][(k2x, k2y, k2z)][(k3x, k3y, k3z)]: (float, [4])
-    difCross_dict = {}
-    for i2 in range(nkpts):
+    return {
+        i2: {
+            i3: {
+                k2: {
+                    k3: (getProbOfP3(p1_ar, p2_ar, p3_ar, p4_ar), p3_ar)
+                    for k3, (p2_ar, p3_ar, p4_ar) in trans_dict[i2][i3][k2].items()
+                } for k2 in trans_dict[i2][i3]
+            } for i3 in trans_dict[i2]
+        } for i2 in traceLoopTime(trans_dict, 'calculating differential cross section at k-point %s')
+    }
+
+
+def traceLoopTime(iterable, msg):
+    for x in iterable:
         loopTime = time()
-        print('\tcalculating differential cross section at k-point %s' % i2)
-
-        trans_i2_dict = trans_dict[i2]
-        difCross_i2_dict = {}
-
-        for i3 in range(nkpts):
-            trans_i2i3_dict = trans_i2_dict[i3]
-            difCross_i2i3_dict = {}
-
-            for k2 in trans_i2i3_dict:
-                trans_i2i3k2_dict = trans_i2i3_dict[k2]
-                difCross_i2i3k2_dict = {}
-
-                for k3 in trans_i2i3k2_dict:
-                    p2_ar, p3_ar, p4_ar = trans_i2i3k2_dict[k3]
-                    difCross = getProbOfP3(p1_ar, p2_ar, p3_ar, p4_ar)
-                    difCross_i2i3k2_dict[k3] = (difCross, p3_ar)
-
-                difCross_i2i3_dict[k2] = difCross_i2i3k2_dict
-            difCross_i2_dict[i3] = difCross_i2i3_dict
-        difCross_dict[i2] = difCross_i2_dict
+        print('\t' + msg % x)
+        yield x
         print('\tloop time = %s' % (time() - loopTime))
-    return difCross_dict
 
 
 def getProperties(infile = 'OUTCAR'):
