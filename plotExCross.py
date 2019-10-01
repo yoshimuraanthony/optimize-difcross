@@ -199,5 +199,20 @@ alpha = 1/137.035999084  # fine structure constant (unitless)
 hbar = 6.582119569e-16  # planck constant (eV s)
 
 #--------------------------- CALLING FROM TERMINAL ----------------------------
+
+def main():
+    import argparse
+    p = argparse.ArgumentParser()
+    p.add_argument('INPUT', nargs='?', default='ex.in', help='keyword args input file')
+    p.add_argument('--output', '-o', default='cross.out', help='output file')
+    p.add_argument('--progress', '-P', default='progress.out', help='progress file')
+    args = p.parse_args()
+
+    writeData(
+        infile=args.INPUT,
+        outfile=args.output,
+        progress=args.progress,
+    )
+
 if __name__ == '__main__':
-    writeData()
+    main()
