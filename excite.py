@@ -109,40 +109,29 @@ def getCrossDict(
             f.write('\tsumming from kpt %s\n' %i2)
             print('\tsumming from kpt %s' %i2)
     
-            difCross_i2_dict = difCross_dict[i2]
-            G_i2_dict = G_dict[i2]
-            cross_i2_dict = {}
+            cross_dict[i2] = {}
     
             for i3, wt3 in enumerate(wt_list):
-                difCross_i2i3_dict = difCross_i2_dict[i3]
-                G_i3_dict = G_dict[i3]
-                cross_i2i3_dict = {}
+                cross_dict[i2][i3] = {}
         
                 for vb in range(occ):
-                    cross_i2i3vb_dict = {}
-                    G_i2vb_dict = G_i2_dict[vb]
-    
+                    cross_dict[i2][i3][vb] = {}
+
                     for cb in range(occ, nbands):
-                        G_i3cb_dict = G_i3_dict[cb]
-                        cross_i2i3vbcb = 0
-    
-                        for k2 in difCross_i2i3_dict:
-                            difCross_i2i3k2_dict = difCross_i2i3_dict[k2]
-                            G_i2vbk2 = G_i2vb_dict[k2]
-        
-                            for k3 in difCross_i2i3k2_dict:
-                                G_i3cbk3 = G_i3cb_dict[k3]
-                                difCross_i2i3k2k3 = difCross_i2i3k2_dict[k3][0]
-                                cross_i2i3vbcb += difCross_i2i3k2k3 * G_i2vbk2\
-                                                * G_i3cbk3 # eV^{-2}
-        
+                        cross_i2i3vbcb = sum(
+                            G_dict[i2][vb][k2]
+                            * difCross_dict[i2][i3][k2][k3][0]
+                            * G_dict[i3][cb][k3]
+                            for k2 in difCross_dict[i2][i3]
+                            for k3 in difCross_dict[i2][i3][k2]
+                        ) # eV^{-2}
+
                         # cross section in unit cell area, x4 for spins
-                        cross_i2i3vb_dict[cb] = cross_i2i3vbcb * 4\
-                                              * invEVSqtoÅSq * normalization\
-                                              * wt2 * wt3 / area
-                    cross_i2i3_dict[vb] = cross_i2i3vb_dict
-                cross_i2_dict[i3] = cross_i2i3_dict
-            cross_dict[i2] = cross_i2_dict
+                        cross_dict[i2][i3][vb][cb] = (
+                             cross_i2i3vbcb * 4
+                             * invEVSqtoÅSq * normalization
+                             * wt2 * wt3 / area
+                        )
             # f.write('\tloop time = %s\n' %(time() - loopTime))
             print('\tloop time = %s' %(time() - loopTime))
     
