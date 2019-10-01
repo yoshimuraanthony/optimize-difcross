@@ -367,18 +367,16 @@ def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
         # trans_dict[kpt2][kpt3][(k2x, k2y, k2z)][(k3x, k3y, k3z)] = ([4], [4], [4])
         trans_dict = {}  # dict with dicts for each k2 containing allowed k3s
 
-        for i2 in range(nkpts):
-            loopTime = time()
-            f.write('\tselecting transitions for k-point %s\n' % i2)
-            print('\tselecting transitions for k-point %s' % i2)
-            trans_i2_dict = {}
+        for i2 in traceLoopTime(range(nkpts), 'selecting transitions for k-point %s', f):
+            trans_dict[i2] = {}
 
             for i3 in range(nkpts):
-                trans_i2i3_dict = {}
+                trans_dict[i2][i3] = {}
 
-                for (k2x, k2y, k2z), p2_ar in p2_dict[i2].items():
+                for k2, p2_ar in p2_dict[i2].items():
+                    trans_dict[i2][i3][k2] = {}
+                    (k2x, k2y, k2z) = k2
                     E2, p2x, p2y, p2z = p2_ar
-                    trans_i2i3k2_dict = {}
 
                     for k3x, k3y in p3_dict[i3]:
 
@@ -413,16 +411,9 @@ def getAllowedTransitions(gamma, nkpts, outfile, p1, p1_ar, p2_dict, p3_dict,
                         bestK3_key = (k3x, k3y, bestK3z)
                         bestP3_ar = array([bestE3, p3x, p3y, bestP3z])
                         bestP4_ar = p1_ar + p2_ar - bestP3_ar
-                        trans_i2i3k2_dict[bestK3_key] = (p2_ar, bestP3_ar,
-                                                         bestP4_ar)
+                        trans_dict[i2][i3][k2][bestK3_key] = (p2_ar, bestP3_ar, bestP4_ar)
                         bestK3z_list.append(bestK3z)  # for debugging
                         bestP3z_list.append(bestP3_ar[-1])
-
-                    trans_i2i3_dict[(k2x, k2y, k2z)] = trans_i2i3k2_dict
-                trans_i2_dict[i3] = trans_i2i3_dict
-            trans_dict[i2] = trans_i2_dict
-            # f.write('\tloop time = %s\n' % (time() - loopTime))
-            print('\tloop time = %s' % (time() - loopTime))
 
     # count how many times each p3z was scattered into
     with open(outfile, 'a') as f:
@@ -456,10 +447,13 @@ def computeDifCrossDict(p1_ar, trans_dict):
     }
 
 
-def traceLoopTime(iterable, msg):
+def traceLoopTime(iterable, msg, outfile=None):
     for x in iterable:
         loopTime = time()
         print('\t' + msg % x)
+        if outfile is not None:
+            print('\t' + msg % x, file=outfile)
+
         yield x
         print('\tloop time = %s' % (time() - loopTime))
 
