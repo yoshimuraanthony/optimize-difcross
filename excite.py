@@ -86,8 +86,12 @@ def getCrossDict(
     """
     # UNDER CONSTRUCTION: p3 only overlaps with states on the same k-point
     startTime = ()
+
+    with open(progress, 'w') as f: # clear file
+        pass
+
     nbands, nelect, wt_list, area = getProperties(OUTCAR)
-    normalization = 1/sum(wt_list)**2 
+    normalization = 1/sum(wt_list)**2
     occ = int(nelect/2)
     if vb_list == 'all':
         vb_list = list(range(occ))
