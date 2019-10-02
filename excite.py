@@ -142,10 +142,9 @@ def getGDict(
         **kwargs,
         ):
     """
-    returns dictioanry containing modulus squared of plane wave coefficients
+    returns dictionary containing modulus squared of plane wave coefficients
         * only works for gamma point calculations
-        G_dict[(kpt, band)] = wave_dict
-            wace_dict[(kx, ky, kz)] = |GCoeff|^2
+        G_dict[kpt][band][(kx, ky, kz)] = |GCoeff|^2
     infile: GCOEFF.txt file containing plane wave coefficients (str)
     outfile: file to which progress is written (str)
     writeMode: 'w' = overwrite, 'a' = append ('w' or 'a')
@@ -180,7 +179,7 @@ def getGDict(
                         GSq = reG**2 + imG**2
                         wave_dict[(kx, ky, kz)] = GSq
     
-                        kptBandi_dict[j] = wave_dict  # indices start from 0
+                    kptBandi_dict[j] = wave_dict  # indices start from 0
                 kptBand_dict[i] = kptBandi_dict 
     
             # out.write('total getGDict time = %s\n\n' %(time() - startTime))
