@@ -1,5 +1,6 @@
 # Anthony Yoshimura
 # 06/06/19
+# new 10/03/2019
 
 from numpy import pi, log, e, cos, sin, arccos, arcsin, sqrt, degrees, radians
 from numpy import floor, ceil, sum
