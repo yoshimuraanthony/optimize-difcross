@@ -3,7 +3,7 @@
 # 09/21/19
 
 from numpy import pi, log, e, cos, sin, arccos, arcsin, sqrt, degrees, radians
-from numpy import floor, ceil, cross
+from numpy import floor, ceil, cross, inf
 from numpy import array, transpose, linspace, zeros, arange, dot, insert
 from periodic import table as p_dict
 from numpy.linalg import norm
@@ -407,7 +407,7 @@ def getDifCrossDictAtKpoints(gamma, p1, p1_ar, p2_i2_dict, p3_i3_dict,
             ) ** .5) / gammap
 
             # find closest k3z for given k3x, k3y pair
-            minP3zDiff = invÅtomeV
+            minP3zDiff = inf
             for k3z in k3z_dict:
                 _, p3z = k3z_dict[k3z]
                 p3zDiff = abs(p3z - trueP3z)
