@@ -358,21 +358,7 @@ def computeDifCrossDict(gamma, outfile, p1, p1_ar, p2_dict, p3_dict,
                                                                  bestK3z_list,
                                                                  bestP3z_list)
 
-    # count how many times each p3z was scattered into
-    with open(outfile, 'a') as f:
-        bestK3z_dict = {}
-        for bestK3z, bestP3z in zip(bestK3z_list, bestP3z_list):
-            if (bestK3z, bestP3z) in bestK3z_dict:
-                bestK3z_dict[(bestK3z, bestP3z)] += 1
-            else:
-                bestK3z_dict[(bestK3z, bestP3z)] = 0
-        possible_list = [(k3z, p3z, bestK3z_dict[(k3z, p3z)])
-                         for k3z, p3z in bestK3z_dict]
-        possible_list.sort()
-        f.write("all bestK3z's:\n")
-        f.write('\tk3z\tp3z\t\tcount\n')
-        for k3z, p3z, count in possible_list:
-            f.write('\t%s,\t%.4g eV\t%s\n' % (k3z, p3z, count))
+    logBestK3zCounts(bestK3z_list, bestP3z_list, outfile)
     return difCross_dict
 
 
@@ -433,6 +419,24 @@ def traceLoopTime(iterable, msg, outfile=None):
 
         yield x
         print('\tloop time = %s' % (time() - loopTime))
+
+
+def logBestK3zCounts(bestK3z_list, bestP3z_list, outfile):
+    # count how many times each p3z was scattered into
+    with open(outfile, 'a') as f:
+        bestK3z_dict = {}
+        for bestK3z, bestP3z in zip(bestK3z_list, bestP3z_list):
+            if (bestK3z, bestP3z) in bestK3z_dict:
+                bestK3z_dict[(bestK3z, bestP3z)] += 1
+            else:
+                bestK3z_dict[(bestK3z, bestP3z)] = 0
+        possible_list = [(k3z, p3z, bestK3z_dict[(k3z, p3z)])
+                         for k3z, p3z in bestK3z_dict]
+        possible_list.sort()
+        f.write("all bestK3z's:\n")
+        f.write('\tk3z\tp3z\t\tcount\n')
+        for k3z, p3z, count in possible_list:
+            f.write('\t%s,\t%.4g eV\t%s\n' % (k3z, p3z, count))
 
 
 def getProperties(infile = 'OUTCAR'):
