@@ -1,12 +1,62 @@
-	selecting transitions and calculating differential cross section for k-point 0
-	selecting transitions and calculating differential cross section for k-point 1
-	selecting transitions and calculating differential cross section for k-point 2
-obtaining coefficients for kpt 1 of 3
-obtaining coefficients for kpt 2 of 3
-obtaining coefficients for kpt 3 of 3
 summing cross sections for all ground state excitations
 	summing from kpt 0
 	summing from kpt 1
 	summing from kpt 2
+all bestK3z's:
+	k3z	p3z		count
+	-13,	-1.612e+04 eV	114
+	-13,	-1.612e+04 eV	158
+	-12,	-1.488e+04 eV	174
+	-12,	-1.488e+04 eV	736
+	-11,	-1.364e+04 eV	726
+	-11,	-1.364e+04 eV	1149
+	-10,	-1.24e+04 eV	1339
+	-10,	-1.24e+04 eV	2201
+	-9,	-1.116e+04 eV	1071
+	-9,	-1.116e+04 eV	3251
+	-8,	-9919 eV	1213
+	-8,	-9919 eV	4497
+	-7,	-8679 eV	5018
+	-7,	-8679 eV	4713
+	-6,	-7439 eV	2558
+	-6,	-7439 eV	5150
+	-5,	-6199 eV	2620
+	-5,	-6199 eV	5568
+	-4,	-4959 eV	2740
+	-4,	-4959 eV	7762
+	-3,	-3720 eV	6753
+	-3,	-3720 eV	7171
+	-2,	-2480 eV	3619
+	-2,	-2480 eV	6271
+	-1,	-1240 eV	3758
+	-1,	-1240 eV	11469
+	0,	0 eV	3848
+	0,	1.565e-12 eV	7253
+	1,	1240 eV	3843
+	1,	1240 eV	12725
+	2,	2480 eV	3732
+	2,	2480 eV	6419
+	3,	3720 eV	7816
+	3,	3720 eV	7665
+	4,	4959 eV	2897
+	4,	4959 eV	8729
+	5,	6199 eV	2699
+	5,	6199 eV	5957
+	6,	7439 eV	2600
+	6,	7439 eV	5421
+	7,	8679 eV	6412
+	7,	8679 eV	5269
+	8,	9919 eV	1303
+	8,	9919 eV	5483
+	9,	1.116e+04 eV	1143
+	9,	1.116e+04 eV	3888
+	10,	1.24e+04 eV	1631
+	10,	1.24e+04 eV	2615
+	11,	1.364e+04 eV	813
+	11,	1.364e+04 eV	1268
+	12,	1.488e+04 eV	174
+	12,	1.488e+04 eV	746
+	13,	1.612e+04 eV	114
+	13,	1.612e+04 eV	158
 
 total excitation cross section = 2.939629071591784e-11

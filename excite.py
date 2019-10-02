@@ -67,14 +67,14 @@ def getTotCross(
 
 
 def getCrossDict(
-        difCross_dict,
         G_dict,
         vb_list = 'all',
         cb_list = 'all',
         Eb = 8e4,  # eV
-        GCOEFF = 'GCOEFF.txt',
+        infile = 'GCOEFF.txt',
         OUTCAR = 'OUTCAR',
         progress = 'progress.out',
+        **kwargs
         ):
     """
     returns dictionary of excitation cross sections for each given valence and
@@ -94,47 +94,63 @@ def getCrossDict(
     if cb_list == 'all':
         cb_list = list(range(occ, nbands))
 
+    E1 = Eb + m
+    gamma = E1/m
+    p1 = (E1**2 - m**2)**.5
+    p1_ar = array([E1, 0, 0, p1])
+
+    p2_dict, p3_dict = readWavecar(infile)
+
+    bestK3z_list = []
+    bestP3z_list = []
+
     with open(progress, 'a') as f:
         f.write('summing cross sections for all ground state excitations\n')
         print('summing cross sections for all ground state excitations')
     
         cross_dict = {}
         startTime = time()
-        for i2, wt2 in enumerate(wt_list):
-            loopTime = time()
-            f.write('\tsumming from kpt %s\n' %i2)
-            print('\tsumming from kpt %s' %i2)
-    
+        for i2 in traceLoopTime(range(len(wt_list)), 'summing from kpt %s', f):
             cross_dict[i2] = {}
     
-            for i3, wt3 in enumerate(wt_list):
-                cross_dict[i2][i3] = {}
-        
+            for i3 in range(len(wt_list)):
+
+                # converts ev^{-2} to cross section in unit cell area,
+                # x4 for spins
+                invEVSqtoCross = (
+                    4 * invEVSqtoÅSq * normalization
+                    * wt_list[i2] * wt_list[i3] / area
+                )
+
+                difCross_i2i3_dict = getDifCrossDictAtKpoints(gamma, p1,
+                                                              p1_ar,
+                                                              p2_dict[i2],
+                                                              p3_dict[i3],
+                                                              bestK3z_list,
+                                                              bestP3z_list)
+
+                cross_i2i3_dict = {}
                 for vb in vb_list:
-                    cross_dict[i2][i3][vb] = {}
+                    cross_i2i3_dict[vb] = {}
 
                     for cb in cb_list:
-                        cross_i2i3vbcb = sum(
+                        cross_i2i3_dict[vb][cb] = sum(
                             G_dict[i2][vb][k2]
-                            * difCross_dict[i2][i3][k2][k3][0]
+                            * difCross_i2i3_dict[k2][k3][0]
                             * G_dict[i3][cb][k3]
-                            for k2 in difCross_dict[i2][i3]
-                            for k3 in difCross_dict[i2][i3][k2]
-                        ) # eV^{-2}
+                            for k2 in difCross_i2i3_dict
+                            for k3 in difCross_i2i3_dict[k2]
+                        ) * invEVSqtoCross
 
-                        # cross section in unit cell area, x4 for spins
-                        cross_dict[i2][i3][vb][cb] = (
-                             cross_i2i3vbcb * 4
-                             * invEVSqtoÅSq * normalization
-                             * wt2 * wt3 / area
-                        )
-            # f.write('\tloop time = %s\n' %(time() - loopTime))
-            print('\tloop time = %s' %(time() - loopTime))
-    
+                cross_dict[i2][i3] = cross_i2i3_dict
+
         # f.write('total getCrossDict time = %s\n\n' %(time() - startTime))
         print('total getCrossDict time = %s\n' %(time() - startTime))
 
+    logBestK3zCounts(bestK3z_list, bestP3z_list, progress) # FIXME supposed to be outfile
+
     return cross_dict
+
 
 def getGDict(
         infile = 'GCOEFF.txt',

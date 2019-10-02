@@ -101,10 +101,10 @@ def writeData(
         val = kwargs_dict[key]
         print('%s = %s' %(key, val))
 
-    difCross_dict = getDifCrossDict(**kwargs_dict)
+    #difCross_dict = getDifCrossDict(**kwargs_dict)
     G_dict = getGDict(**kwargs_dict)
 
-    cross_dict = getCrossDict(difCross_dict, G_dict)
+    cross_dict = getCrossDict(G_dict, **kwargs_dict)
     ediff_dict = getEdiffDict(OUTCAR)
 
     with open(outfile, 'w') as f:
