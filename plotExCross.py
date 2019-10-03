@@ -70,9 +70,9 @@ def writeData(
         print('%s = %s' %(key, val))
 
     #difCross_dict = getDifCrossDict(**kwargs_dict)
-    G_dict = getGDict(**kwargs_dict)
+    k_dict, G_dict = getGDict(**kwargs_dict)
 
-    cross_dict = getCrossDict(G_dict, **kwargs_dict)
+    cross_dict = getCrossDict(k_dict, G_dict, **kwargs_dict)
     ediff_dict = getEdiffDict(OUTCAR)
 
     with open(outfile, 'w') as f:

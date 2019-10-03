@@ -12,7 +12,7 @@ from moller import getProbOfP3, getBetaAndGamma
 
 # catch warnings (e.g. RuntimeWarning) as an exception
 import warnings
-warnings.filterwarnings('error') 
+warnings.filterwarnings('error')
 
 from time import time
 
@@ -67,6 +67,7 @@ def getTotCross(
 
 
 def getCrossDict(
+        k_dict,
         G_dict,
         vb_list = 'all',
         cb_list = 'all',
@@ -126,29 +127,22 @@ def getCrossDict(
                     * wt_list[i2] * wt_list[i3] / area
                 )
 
-                difCross_i2i3_dict = getDifCrossDictAtKpoints(gamma, p1,
-                                                              p1_ar,
-                                                              p2_dict[i2],
-                                                              p3_dict[i3],
-                                                              bestK3z_list,
-                                                              bestP3z_list)
+                difCross_i2i3_mat, _ = getDifCrossDictAtKpoints(gamma, p1,
+                                                                p1_ar,
+                                                                k_dict[i2],
+                                                                k_dict[i3],
+                                                                p2_dict[i2],
+                                                                p3_dict[i3],
+                                                                bestK3z_list,
+                                                                bestP3z_list)
 
                 cross_i2i3_dict = {}
                 for vb in vb_list:
                     cross_i2i3_dict[vb] = {}
 
                     for cb in cb_list:
-                        # sum over k2, k3
-                        # dot(C2, dot(difCross, C3))
-                        # C2, C3 = array with coefficients for each k2, k3
-                        # difCross = rank 2 array with difCross for each (k2,
-                        # k3), k3 index runs faster
-                        cross_i2i3_dict[vb][cb] = sum(
-                            G_dict[i2][vb][k2]
-                            * difCross_i2i3_dict[k2][k3][0]
-                            * G_dict[i3][cb][k3]
-                            for k2 in difCross_i2i3_dict
-                            for k3 in difCross_i2i3_dict[k2]
+                        cross_i2i3_dict[vb][cb] = (
+                            G_dict[i2][vb] @ difCross_i2i3_mat @ G_dict[i3][cb]
                         ) * invEVSqtoCross
 
                 cross_dict[i2][i3] = cross_i2i3_dict
@@ -183,34 +177,45 @@ def getGDict(
             
             for n in range(6):
                 f.readline()
-    
-            kptBand_dict = {}
+
+            # k_dict[kpt][wave] -> (kx, ky, kz)
+            k_dict = {}
+            # G_dict[kpt][band][wave] -> GSq
+            G_dict = {}
             for i in range(nkpts):
                 out.write('obtaining coefficients for kpt %s of %s\n'
                           %(i + 1, nkpts))
                 print('obtaining coefficients for kpt %s of %s'
                           %(i + 1, nkpts))
-                kptBandi_dict = {}
+                G_i_dict = {}
                 f.readline()
-                for j in range(nbands):
+                for b in range(nbands):
                     nwaves = int(f.readline().split()[1])
                     energy = float(f.readline().split()[1])
-                    wave_dict = {}
-                    for k in range(nwaves):
+                    k_ib_list = []
+                    G_ib_list = []
+                    for _ in range(nwaves):
                         G_list = f.readline().split()
                         kx, ky, kz = [int(val) for val in G_list[:3]]
                         reG = float(G_list[4])
                         imG = float(G_list[6])
                         GSq = reG**2 + imG**2
-                        wave_dict[(kx, ky, kz)] = GSq
+                        k_ib_list.append((kx, ky, kz))
+                        G_ib_list.append(GSq)
+
+                    # for now, require all bands to list waves in same order
+                    if b == 0:  # first band?
+                        k_dict[i] = array(k_ib_list)
+                    else:
+                        assert (k_dict[i] == array(k_ib_list)).all(), "wave order mismatch between bands"
     
-                    kptBandi_dict[j] = wave_dict  # indices start from 0
-                kptBand_dict[i] = kptBandi_dict 
-    
+                    G_i_dict[b] = array(G_ib_list)  # indices start from 0
+                G_dict[i] = G_i_dict
+
             # out.write('total getGDict time = %s\n\n' %(time() - startTime))
             print('total getGDict time = %s\n' %(time() - startTime))
     
-        return kptBand_dict
+        return k_dict, G_dict
 
 
 def readWavecar(infile):
@@ -311,11 +316,20 @@ def computeDifCrossDict(gamma, outfile, p1, p1_ar, p2_dict, p3_dict,
     return difCross_dict
 
 
-def getDifCrossDictAtKpoints(gamma, p1, p1_ar, p2_i2_dict, p3_i3_dict,
+def getDifCrossDictAtKpoints(gamma, p1, p1_ar,
+                             k_i2_arr, k_i3_arr,  # ordering for matrix
+                             p2_i2_dict, p3_i3_dict,
                              bestK3z_list, bestP3z_list):
-    difCross_i2i3_dict = {}
-    for k2, p2_ar in p2_i2_dict.items():
-        difCross_i2i3_dict[k2] = {}
+    difCross_i2i3_mat = zeros(shape=(len(k_i2_arr), len(k_i3_arr)))
+    bestP3_i2i3_dict = {}
+
+    k3_wave_lookup = {
+        k3: wave3 for (wave3, k3) in enumerate(map(tuple, k_i3_arr))
+    }
+
+    for wave2, k2 in enumerate(map(tuple, k_i2_arr)):
+        bestP3_i2i3_dict[k2] = {}
+        p2_ar = p2_i2_dict[k2]
         E2, p2x, p2y, p2z = p2_ar
 
         for k3x, k3y in p3_i3_dict:
@@ -350,12 +364,15 @@ def getDifCrossDictAtKpoints(gamma, p1, p1_ar, p2_i2_dict, p3_i3_dict,
             bestE3, _ = k3z_dict[bestK3z]
             bestK3_key = (k3x, k3y, bestK3z)
             bestP3_ar = array([bestE3, p3x, p3y, bestP3z])
+            bestWave3 = k3_wave_lookup[bestK3_key]
 
             difCross = getProbOfP3(p1_ar, p2_ar, bestP3_ar)
-            difCross_i2i3_dict[k2][bestK3_key] = (difCross, bestP3_ar)
+
+            difCross_i2i3_mat[wave2, bestWave3] = difCross
+            bestP3_i2i3_dict[k2][bestK3_key] = bestP3_ar
             bestK3z_list.append(bestK3z)  # for debugging
             bestP3z_list.append(bestP3_ar[-1])
-    return difCross_i2i3_dict
+    return difCross_i2i3_mat, bestP3_i2i3_dict
 
 
 def traceLoopTime(iterable, msg, outfile=None):
