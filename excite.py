@@ -1,7 +1,3 @@
-# Excite.py
-# Anthony Yoshimura
-# 09/21/19
-
 from numpy import pi, log, e, cos, sin, arccos, arcsin, sqrt, degrees, radians
 from numpy import floor, ceil, cross, inf
 from numpy import array, transpose, linspace, zeros, arange, dot, insert
@@ -30,11 +26,8 @@ Excitation                             |  \                 /
                                        |_/_________________\_____   
                                                momentum
                                                                  
-For excitation, the p3 state can be approximated as a nonrelativistic plane
-wave. Most functions should accept p3 and Eb as inputs
-
 Should use px and py LAB frame values, since they are much greater than pz
-also, cos(theta) ~ 1 - theta**2/2, while sin(theta)
+also, cos(theta) ~ 1 - theta**2/2, while sin(theta) ~ theta
 
 Plane wave coefficients are generated from WaveTrans.f90 on vasp calculations 
 
@@ -67,13 +60,17 @@ def getTotCross(
 
 
 def getCrossDict(
-        k_dict,
-        G_dict,
+        k2_dict,
+        k3_dict,
+        G2_dict,
+        G3_dict,
         vb_list = 'all',
         cb_list = 'all',
         Eb = 8e4,  # eV
-        infile = 'GCOEFF.txt',
-        OUTCAR = 'OUTCAR',
+        GCOEFF2 = 'GCOEFF2.txt',
+        GCOEFF3 = 'GCOEFF3.txt',
+        OUTCAR2 = 'OUTCAR2',
+        OUTCAR3 = 'OUTCAR3',
         progress = 'progress.out',
         **kwargs
         ):
@@ -82,8 +79,10 @@ def getCrossDict(
         conduction band pair for each k-point pair
         * if probabilities are much less than one, we can add them.
     Eb: beam energy in LAB frame in eV (pos float)
-    GCOEFF: GCOEFF file containing plane wave coefficients (str)
-    OUTCAR: OUTCAR file from vasp run (str)
+    GCOEFF2: GCOEFF.txt from ISYM = 0 (str)
+    GCOEFF3: GCOEFF.txt from ISYM = 1 (str)
+    OUTCAR2: OUTCAR from ISYM = 0 (str)
+    OUTCAR3: OUTCAR from ISYM = 1 (str)
     """
     # UNDER CONSTRUCTION: p3 only overlaps with states on the same k-point
     startTime = ()
@@ -91,8 +90,9 @@ def getCrossDict(
     with open(progress, 'w') as f: # clear file
         pass
 
-    nbands, nelect, wt_list, area = getProperties(OUTCAR)
-    normalization = 1/sum(wt_list)**2
+    nbands, nelect, wt2_list, area = getProperties(OUTCAR2)
+    nbands, nelect, wt3_list, area = getProperties(OUTCAR3)
+    normalization = 1/sum(wt2_list)/sum(wt3_list)
     occ = int(nelect/2)
     if vb_list == 'all':
         vb_list = list(range(occ))
@@ -104,7 +104,8 @@ def getCrossDict(
     p1 = (E1**2 - m**2)**.5
     p1_ar = array([E1, 0, 0, p1])
 
-    p2_dict, p3_dict = readWavecar(infile)
+    p2_dict = readWavecar2(GCOEFF2)
+    p3_dict = readWavecar3(GCOEFF3)
 
     bestK3z_list = []
     bestP3z_list = []
@@ -115,26 +116,26 @@ def getCrossDict(
     
         cross_dict = {}
         startTime = time()
-        for i2 in traceLoopTime(range(len(wt_list)), 'summing from kpt %s', f):
+        for i2 in traceLoopTime(range(len(wt2_list)),
+                                'summing from kpt %s', f):
             cross_dict[i2] = {}
     
-            for i3 in range(len(wt_list)):
+            for i3 in range(len(wt3_list)):
 
                 # converts ev^{-2} to cross section in unit cell area,
                 # x4 for spins
                 invEVSqtoCross = (
                     4 * invEVSqtoÅSq * normalization
-                    * wt_list[i2] * wt_list[i3] / area
+                    * wt2_list[i2] * wt3_list[i3] / area
                 )
 
-                difCross_i2i3_mat, _ = getDifCrossDictAtKpoints(gamma, p1,
-                                                                p1_ar,
-                                                                k_dict[i2],
-                                                                k_dict[i3],
-                                                                p2_dict[i2],
-                                                                p3_dict[i3],
-                                                                bestK3z_list,
-                                                                bestP3z_list)
+                difCross_i2i3_mat, _ = getDifCrossDictAtKpoints(gamma, p1, p1_ar,
+                                                              k2_dict[i2],
+                                                              k3_dict[i3],
+                                                              p2_dict[i2],
+                                                              p3_dict[i3],
+                                                              bestK3z_list,
+                                                              bestP3z_list)
 
                 cross_i2i3_dict = {}
                 for vb in vb_list:
@@ -142,7 +143,7 @@ def getCrossDict(
 
                     for cb in cb_list:
                         cross_i2i3_dict[vb][cb] = (
-                            G_dict[i2][vb] @ difCross_i2i3_mat @ G_dict[i3][cb]
+                            G2_dict[i2][vb] @ difCross_i2i3_mat @ G3_dict[i3][cb]
                         ) * invEVSqtoCross
 
                 cross_dict[i2][i3] = cross_i2i3_dict
@@ -156,15 +157,14 @@ def getCrossDict(
 
 
 def getGDict(
-        infile = 'GCOEFF.txt',
+        infile = 'GCOEFF2.txt',
         progress = 'progress.out',
         **kwargs,
         ):
     """
     returns dictionary containing modulus squared of plane wave coefficients
-        * only works for gamma point calculations
         G_dict[kpt][band][(kx, ky, kz)] = |GCoeff|^2
-    infile: GCOEFF.txt file containing plane wave coefficients (str)
+    infile: GCOEFF.txt from ISYM = 0 (str)
     outfile: file to which progress is written (str)
     writeMode: 'w' = overwrite, 'a' = append ('w' or 'a')
     """
@@ -218,11 +218,15 @@ def getGDict(
         return k_dict, G_dict
 
 
-def readWavecar(infile):
+def readWavecar3(infile):
+    """
+    records all incoming planewaves included in ISYM = 1
+        * p2_dict contains all k-points, while p3_dict contains symmetrically
+        distinct k-points
+    """
     # for each k3x, k3y pair, store one dictionary for each k3z
     #     need to prepare dictionary structure beforehand since k's are read
     #     off from one long unordered list
-    p2_dict = {} # p2_dict[nkpts][(kx, ky, kz)][4]
     p3_dict = {} # p3_dict[nkpts][(kx, ky)] = ({k3z: [4]}, p3x, p3y)
     for i in range(400):
         p3_dict[i] = {}
@@ -232,7 +236,74 @@ def readWavecar(infile):
                 # so that p3x, p3y are stored once
 
     # record all momenta listed in WAVECAR
-    print('storing all plane waves')
+    print('storing all outgoing plane waves')
+    with open(infile) as f:
+
+        spin = int(f.readline().strip())
+        nkpts = int(f.readline().strip())
+
+        for _ in range(4):
+            f.readline()
+
+        rCell = []
+        for _ in range(3):
+            rCell.append([float(val) for val in f.readline().split()])
+        rCell = array(rCell) * invÅtoEV  # multiply here instead of in loop
+        bz = norm(rCell[2])
+        f.readline()
+
+        crystalP_ar = zeros(3)  # assume first k-point is gamma
+        for i in range(nkpts):
+            nwaves = int(f.readline().split()[-1])
+            print('\tstoring %s waves at k-point %s: %s'
+                  % (nwaves, i, crystalP_ar / invÅtoEV))
+            f.readline()
+
+            # store each p3 in each k3z_dict
+            for j in range(nwaves):
+                # MUST ACCTOUNT for crystal momentum!
+                k_ar = array([int(val) for val in f.readline().split()[:3]])
+                p_ar = dot(k_ar, rCell) + crystalP_ar
+                px, py, pz = p_ar
+                E = (sum([comp ** 2 for comp in p_ar]) + m ** 2) ** .5
+                p_ar = insert(p_ar, 0, E)  # make p_ar a 4-vector
+
+                # store material momentum
+                kx, ky, kz = k_ar
+                k3z_list = p3_dict[i][(kx, ky)]
+                k3z_list[0][kz] = (E, pz)
+                if len(k3z_list) == 1:
+                    p3_dict[i][(kx, ky)] += [px, py]
+
+            for line in f:
+                if '.' in line[:5]:
+                    kpt = array([float(val) for val in line.split()])
+                    crystalP_ar = dot(kpt, rCell)
+                    break
+
+    # Delete empty dictionaries
+    for i in list(p3_dict):
+        for k in list(p3_dict[i]):
+            if len(p3_dict[i][k]) == 1:
+                del p3_dict[i][k]
+        if i not in range(nkpts):
+            del p3_dict[i]
+
+    return p3_dict
+
+
+def readWavecar2(infile):
+    """
+    records all incoming planewaves included in ISYM = 0
+        * p2_dict contains all k-points, while p3_dict contains symmetrically
+        distinct k-points
+    """
+    # for each k3x, k3y pair, store one dictionary for each k3z
+    #     need to prepare dictionary structure beforehand since k's are read
+    #     off from one long unordered list
+    p2_dict = {} # p2_dict[nkpts][(kx, ky, kz)][4]
+    # record all momenta listed in WAVECAR
+    print('storing all incoming plane waves')
     with open(infile) as f:
 
         spin = int(f.readline().strip())
@@ -256,7 +327,7 @@ def readWavecar(infile):
                   % (nwaves, i, crystalP_ar / invÅtoEV))
             f.readline()
 
-            # store each p3 in each k3z_dict
+            # store each p2
             for j in range(nwaves):
                 # MUST ACCTOUNT for crystal momentum!
                 k_ar = array([int(val) for val in f.readline().split()[:3]])
@@ -268,10 +339,6 @@ def readWavecar(infile):
                 # store material momentum
                 kx, ky, kz = k_ar
                 p2_i_dict[(kx, ky, kz)] = p_ar
-                k3z_list = p3_dict[i][(kx, ky)]
-                k3z_list[0][kz] = (E, pz)
-                if len(k3z_list) == 1:
-                    p3_dict[i][(kx, ky)] += [px, py]
 
             for line in f:
                 if '.' in line[:5]:
@@ -281,15 +348,7 @@ def readWavecar(infile):
 
             p2_dict[i] = p2_i_dict
 
-    # Delete empty dictionaries
-    for i in list(p3_dict):
-        for k in list(p3_dict[i]):
-            if len(p3_dict[i][k]) == 1:
-                del p3_dict[i][k]
-        if i not in range(nkpts):
-            del p3_dict[i]
-
-    return p2_dict, p3_dict
+    return p2_dict
 
 
 def computeDifCrossDict(gamma, outfile, p1, p1_ar, p2_dict, p3_dict,

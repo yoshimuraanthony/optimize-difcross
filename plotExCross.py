@@ -51,7 +51,10 @@ def plotCrossVsEnergy(
 
 def writeData(
         infile = 'ex.in',
-        OUTCAR = 'OUTCAR',
+        OUTCAR2 = 'OUTCAR2',
+        OUTCAR3 = 'OUTCAR3',
+        GCOEFF2 = 'GCOEFF2.txt',
+        GCOEFF3 = 'GCOEFF3.txt',
         outfile = 'cross.out',
         progress = 'progress.out',
         ):
@@ -70,10 +73,11 @@ def writeData(
         print('%s = %s' %(key, val))
 
     #difCross_dict = getDifCrossDict(**kwargs_dict)
-    k_dict, G_dict = getGDict(**kwargs_dict)
+    k2_dict, G2_dict = getGDict(GCOEFF2, **kwargs_dict)
+    k3_dict, G3_dict = getGDict(GCOEFF3, **kwargs_dict)
 
-    cross_dict = getCrossDict(k_dict, G_dict, **kwargs_dict)
-    ediff_dict = getEdiffDict(OUTCAR)
+    cross_dict = getCrossDict(k2_dict, k3_dict, G2_dict, G3_dict, **kwargs_dict)
+    ediff_dict = getEdiffDict(OUTCAR2, OUTCAR3)
 
     with open(outfile, 'w') as f:
         f.write('energy\tcross section\ttransition\n')
@@ -102,20 +106,22 @@ def writeData(
     
 
 def getEdiffDict(
-        OUTCAR = 'OUTCAR',
+        OUTCAR2 = 'OUTCAR2',
+        OUTCAR3 = 'OUTCAR3',
         **kwargs,
         ):
     """
     returns energy differences for all possible excitations
     """
-    energy_tab = getEnergyTab(OUTCAR)
-    nbands, nelect, wt_list, area = getProperties(OUTCAR)
+    energy2_tab = getEnergyTab(OUTCAR2)
+    energy3_tab = getEnergyTab(OUTCAR3)
+    nbands, nelect, wt_list, area = getProperties(OUTCAR2)
     occ = int(nelect/2)
 
     ediff_dict = {}
-    for i2, energy2_list in enumerate(energy_tab):
+    for i2, energy2_list in enumerate(energy2_tab):
         ediff_i2_dict = {}
-        for i3, energy3_list in enumerate(energy_tab):
+        for i3, energy3_list in enumerate(energy3_tab):
             ediff_i2i3_dict = {}
             for vb, energy2 in enumerate(energy2_list[:occ]):
                 ediff_i2i3vb_dict = {}
