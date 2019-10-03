@@ -8,7 +8,7 @@ from numpy import array, transpose, linspace, zeros, arange
 from periodic import table as p_dict
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
-import numba
+#import numba
 
 r"""                                   
 Moller Cross Section
@@ -28,7 +28,7 @@ Want likelihood of transfering certain momentum p3 to valence electron given
 beam energy Eb, all in eV.
 """
 
-@numba.jit(nopython=True)
+#@numba.jit(nopython=True)
 def getProbOfP3(p1_ar, p2_ar, p3_ar, p4_ar=None):
     """
     returns Moller differential cross section in LAB frame for
