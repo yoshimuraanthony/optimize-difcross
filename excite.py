@@ -138,6 +138,11 @@ def getCrossDict(
                     cross_i2i3_dict[vb] = {}
 
                     for cb in cb_list:
+                        # sum over k2, k3
+                        # dot(C2, dot(difCross, C3))
+                        # C2, C3 = array with coefficients for each k2, k3
+                        # difCross = rank 2 array with difCross for each (k2,
+                        # k3), k3 index runs faster
                         cross_i2i3_dict[vb][cb] = sum(
                             G_dict[i2][vb][k2]
                             * difCross_i2i3_dict[k2][k3][0]
@@ -208,88 +213,13 @@ def getGDict(
         return kptBand_dict
 
 
-def getDifCrossDict(
-        Eb = 8e4,
-        infile = 'GCOEFF.txt',
-        printInfo = True,
-        outfile = 'difCross.out',
-        progress = 'progress.out',
-        k2x = 0,  # testExcite.py
-        k2z = 0,
-        **kwargs,
-        ):
-    """
-    returns dictionary of differential cross sections for all plane wave pairs
-        in WAVECAR that satisfy conservation of momentum
-        * p2 can be any wave in WAVECAR
-        * one p3 per (kx, ky) given in WAVECAR
-        * store all p3 - p2 that are physically allowed
-        * assumes lattice vector a3 is perpendicular to a1 and a2
-    Eb: beam energy in LAB frame in eV (pos float)
-    infile: GCOEFF.txt file containing plane wave coefficients (str)
-    """
-    startTime = time()
-
-    # beam momentum
-    E1 = Eb + m
-    gamma = E1/m
-    p1 = (E1**2 - m**2)**.5
-    p1_ar = array([E1, 0, 0, p1])
-
-    p2_dict, p3_dict = readWavecar(infile)
-
-    # check point
-    with open(outfile, 'w') as f:
-        f.write('Eb = %s\n\n' %Eb)
-        print('Eb = %s\n' %Eb)
-        for i in p3_dict:
-            p3_i_dict = p3_dict[i]
-            nwaves = sum([len(p3_i_dict[pair][0]) for pair in p3_i_dict]) 
-            f.write('obtained %s waves at k-point %s\n' %(nwaves, i))
-            f.write('number of (kx, ky) pairs in p3_i_dict: %s\n'
-                    %len(p3_i_dict))
-            print('obtained %s waves at k-point %s' %(nwaves, i))
-            print('number of (kx, ky) pairs in p3_i_dict: %s'
-                    %len(p3_i_dict))
-
-        crossStartTime = time()
-        readTime = crossStartTime - startTime
-        # f.write('read time = %s\n\n' %readTime)
-        f.write('selecting all physically allowed p3 for each p2\n')
-        print('read time = %s\n' %readTime)
-        f.write('\ncalculating differential cross sections\n')
-        print('calculating differential cross sections')
-
-    # track number of times each p3z and k3z are scattered into.
-    # find dif cross section for each physically allowed momentum transfer
-    difCross_dict = computeDifCrossDict(gamma, outfile, p1, p1_ar,
-                                        p2_dict, p3_dict, progress)
-
-    # check point
-    with open(outfile, 'a') as f:
-        endTime = time()
-        crossTime = endTime - crossStartTime
-
-        # f.write('transition calculations time = %s\n' %transTime)
-        # f.write('\nread time = %s\n' %readTime)
-        # f.write('transition calculations time = %s\n' %transTime)
-        # f.write('cross calculation time = %s\n' %crossTime)
-        # f.write('total getDifCross time = %s\n\n' %(endTime - startTime))
-        print('cross calculation time = %s' %crossTime)
-        print('\nread time = %s' %readTime)
-        print('cross calculation time = %s' %crossTime)
-        print('total getDifCross time = %s\n' %(endTime - startTime))
-
-    return difCross_dict
-
-
 def readWavecar(infile):
     # for each k3x, k3y pair, store one dictionary for each k3z
     #     need to prepare dictionary structure beforehand since k's are read
     #     off from one long unordered list
     p2_dict = {} # p2_dict[nkpts][(kx, ky, kz)][4]
     p3_dict = {} # p3_dict[nkpts][(kx, ky)] = ({k3z: [4]}, p3x, p3y)
-    for i in range(200):
+    for i in range(400):
         p3_dict[i] = {}
         for j in range(-60, 61):  # 20 Å with 600 eV maxed at 33 waves
             for k in range(-60, 61):  # j and k are recip. lat. coords
@@ -386,17 +316,16 @@ def getDifCrossDictAtKpoints(gamma, p1, p1_ar, p2_i2_dict, p3_i3_dict,
     difCross_i2i3_dict = {}
     for k2, p2_ar in p2_i2_dict.items():
         difCross_i2i3_dict[k2] = {}
-        (k2x, k2y, k2z) = k2
         E2, p2x, p2y, p2z = p2_ar
 
         for k3x, k3y in p3_i3_dict:
+            k3z_dict, p3x, p3y = p3_i3_dict[(k3x, k3y)]
 
             # ignore zero-scattering scenario
-            if (k2x, k2y) == (k3x, k3y):
+            if abs(p2x - p3x) < 0.01 and abs(p2y - p3y) < 0.01:
                 continue
 
-            # calculate trueP3z that conserves of momentum
-            k3z_dict, p3x, p3y = p3_i3_dict[(k3x, k3y)]
+            # calculate trueP3z that conserves momentum
             gammap = gamma + 1
             trueP3z = (p1 + p2z - (
                 (p1 + p2z) ** 2
@@ -688,3 +617,78 @@ invEVSqtoÅSq = hbar**2*c**2*1e20
 #            for j in range(1):
 #                k2y = 0
 #-------------------------------------
+#def getDifCrossDict(
+#        Eb = 8e4,
+#        infile = 'GCOEFF.txt',
+#        printInfo = True,
+#        outfile = 'difCross.out',
+#        progress = 'progress.out',
+#        k2x = 0,  # testExcite.py
+#        k2z = 0,
+#        **kwargs,
+#        ):
+#    """
+#    returns dictionary of differential cross sections for all plane wave pairs
+#        in WAVECAR that satisfy conservation of momentum
+#        * p2 can be any wave in WAVECAR
+#        * one p3 per (kx, ky) given in WAVECAR
+#        * store all p3 - p2 that are physically allowed
+#        * assumes lattice vector a3 is perpendicular to a1 and a2
+#    Eb: beam energy in LAB frame in eV (pos float)
+#    infile: GCOEFF.txt file containing plane wave coefficients (str)
+#    """
+#    startTime = time()
+#
+#    # beam momentum
+#    E1 = Eb + m
+#    gamma = E1/m
+#    p1 = (E1**2 - m**2)**.5
+#    p1_ar = array([E1, 0, 0, p1])
+#
+#    p2_dict, p3_dict = readWavecar(infile)
+#
+#    # check point
+#    with open(outfile, 'w') as f:
+#        f.write('Eb = %s\n\n' %Eb)
+#        print('Eb = %s\n' %Eb)
+#        for i in p3_dict:
+#            p3_i_dict = p3_dict[i]
+#            nwaves = sum([len(p3_i_dict[pair][0]) for pair in p3_i_dict]) 
+#            f.write('obtained %s waves at k-point %s\n' %(nwaves, i))
+#            f.write('number of (kx, ky) pairs in p3_i_dict: %s\n'
+#                    %len(p3_i_dict))
+#            print('obtained %s waves at k-point %s' %(nwaves, i))
+#            print('number of (kx, ky) pairs in p3_i_dict: %s'
+#                    %len(p3_i_dict))
+#
+#        crossStartTime = time()
+#        readTime = crossStartTime - startTime
+#        # f.write('read time = %s\n\n' %readTime)
+#        f.write('selecting all physically allowed p3 for each p2\n')
+#        print('read time = %s\n' %readTime)
+#        f.write('\ncalculating differential cross sections\n')
+#        print('calculating differential cross sections')
+#
+#    # track number of times each p3z and k3z are scattered into.
+#    # find dif cross section for each physically allowed momentum transfer
+#    difCross_dict = computeDifCrossDict(gamma, outfile, p1, p1_ar,
+#                                        p2_dict, p3_dict, progress)
+#
+#    # check point
+#    with open(outfile, 'a') as f:
+#        endTime = time()
+#        crossTime = endTime - crossStartTime
+#
+#        # f.write('transition calculations time = %s\n' %transTime)
+#        # f.write('\nread time = %s\n' %readTime)
+#        # f.write('transition calculations time = %s\n' %transTime)
+#        # f.write('cross calculation time = %s\n' %crossTime)
+#        # f.write('total getDifCross time = %s\n\n' %(endTime - startTime))
+#        print('cross calculation time = %s' %crossTime)
+#        print('\nread time = %s' %readTime)
+#        print('cross calculation time = %s' %crossTime)
+#        print('total getDifCross time = %s\n' %(endTime - startTime))
+#
+#    return difCross_dict
+#
+#
