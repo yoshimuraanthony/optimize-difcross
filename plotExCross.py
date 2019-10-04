@@ -76,7 +76,8 @@ def writeData(
     k2_dict, G2_dict = getGDict(GCOEFF2, **kwargs_dict)
     k3_dict, G3_dict = getGDict(GCOEFF3, **kwargs_dict)
 
-    cross_dict = getCrossDict(k2_dict, k3_dict, G2_dict, G3_dict, **kwargs_dict)
+    cross_dict = getCrossDict(k2_dict, k3_dict, G2_dict, G3_dict,
+                              **kwargs_dict)
     ediff_dict = getEdiffDict(OUTCAR2, OUTCAR3)
 
     with open(outfile, 'w') as f:

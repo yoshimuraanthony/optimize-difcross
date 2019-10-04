@@ -8,6 +8,15 @@ from numpy import array, transpose, linspace, zeros, arange
 from periodic import table as p_dict
 from numpy.linalg import norm
 import matplotlib.pyplot as plt
+
+# catch warnings (e.g. RuntimeWarning) as an exception
+import warnings
+warnings.filterwarnings('error')
+
+#try:
+#    import numba
+#except:
+#    numba = None
 #import numba
 
 r"""                                   
@@ -63,6 +72,9 @@ def getProbOfP3(p1_ar, p2_ar, p3_ar, p4_ar=None):
     prefactor = alpha**2/abs(E1*p2z - E2*p1z)/abs(p1tz*m)
 
     return 4*prefactor*(first + second + third) # x2, P(theta) = P(pi-theta)
+
+#if numba:
+#    getProbOfP3 = numba.jit(nopython=True)(getProbOfP3)
 
 
 #--------------------------------- CM FRAME -----------------------------------

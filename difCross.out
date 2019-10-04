@@ -6,9 +6,9 @@ obtained 646 waves at k-point 1
 number of (kx, ky) pairs in p3_i_dict: 34
 obtained 642 waves at k-point 2
 number of (kx, ky) pairs in p3_i_dict: 36
-selecting all physically allowed p3 for each p2
+read time = 4.309901237487793
 
-calculating differential cross sections
+selecting all physically allowed p3 for each p2
 all bestK3z's:
 	k3z	p3z		count
 	-13,	-1.612e+04 eV	114
@@ -65,3 +65,14 @@ all bestK3z's:
 	12,	1.488e+04 eV	746
 	13,	1.612e+04 eV	114
 	13,	1.612e+04 eV	158
+number of transitions = 9
+transition selection time = 3.1901769638061523
+
+calculating differential cross sections
+transition calculations time = 3.1901769638061523
+
+read time = 4.309901237487793
+transition calculations time = 3.1901769638061523
+cross calculation time = 5.277531862258911
+total getDifCross time = 12.777610063552856
+
